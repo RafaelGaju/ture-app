@@ -250,6 +250,21 @@
     .sc-done{display:block;width:100%;border:0;border-radius:14px;padding:14px;background:#ad9bff;color:#11152c;font-weight:900;font-size:17px}
     .winner-overlay{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#3b3418f7,#0b0a05fc)}
     .winner-overlay.is-open{display:flex}
+    .winner-kind{font-size:13px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#f1e6c0;opacity:.85}
+    @media(max-width:430px){.winner-kind,.winner-overlay.is-epic .winner-kind{letter-spacing:.08em;font-size:13px}}
+    .winner-stats{display:none;gap:10px;flex-wrap:wrap;justify-content:center}
+    .winner-stats span{background:#0006;border:1px solid #ffe39744;border-radius:12px;padding:8px 12px;color:#ffe397;font-weight:800;font-size:14px}
+    /* Campanie lungă: varianta epică */
+    .winner-overlay.is-epic{background:radial-gradient(ellipse at 50% 35%,#5a4512f7 0%,#2a1d06f7 45%,#070500fd 100%);animation:epic-glow 2.4s ease-in-out infinite alternate}
+    @keyframes epic-glow{from{box-shadow:inset 0 0 120px #ffcf4a22}to{box-shadow:inset 0 0 220px #ffcf4a55}}
+    .winner-overlay.is-epic .winner-kind{color:#ffe397;font-size:15px;animation:kind-in .8s ease-out both}
+    .winner-overlay.is-epic .winner-trophy{font-size:130px;animation:epic-trophy 1.6s cubic-bezier(.2,1.6,.4,1) both,trophy 1.4s 1.6s ease-in-out infinite alternate;filter:drop-shadow(0 0 30px #ffcf4a99)}
+    .winner-overlay.is-epic .winner-name{font-size:clamp(38px,calc(var(--uvw) * 11),64px);animation:kind-in .9s .5s ease-out both}
+    .winner-overlay.is-epic .winner-stats{display:flex;animation:kind-in .9s 1s ease-out both}
+    @keyframes epic-trophy{0%{transform:scale(0) rotate(-30deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+    @keyframes kind-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    .firework-spark{position:fixed;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:41;animation:spark 1.3s cubic-bezier(.15,.7,.3,1) forwards}
+    @keyframes spark{0%{transform:translate(0,0) scale(1);opacity:1}80%{opacity:1}100%{transform:translate(var(--dx),calc(var(--dy) + 40px)) scale(.3);opacity:0}}
     .winner-trophy{font-size:90px;animation:trophy 1.2s ease-in-out infinite alternate}
     @keyframes trophy{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-10px) rotate(4deg)}}
     .winner-name{font-size:clamp(34px,calc(var(--uvw) * 10),52px);font-weight:900;letter-spacing:-.03em;color:var(--player-color)}
@@ -459,9 +474,11 @@
     <button class="sc-done" id="closeScore" type="button">Gata</button>
   </dialog>
   <div class="winner-overlay" id="winnerOverlay" role="alertdialog" aria-labelledby="winnerName">
-    <div class="winner-trophy">🏆</div>
+    <div class="winner-kind" id="winnerKind"></div>
+    <div class="winner-trophy" id="winnerTrophy">🏆</div>
     <div class="winner-name" id="winnerName"></div>
     <div class="winner-sub" id="winnerSub"></div>
+    <div class="winner-stats" id="winnerStats"></div>
     <div class="winner-actions">
       <button type="button" class="confirm" id="winnerNewGame">Joc nou</button>
       <button type="button" class="cancel" id="winnerClose">Continuăm (greșeală)</button>
@@ -520,7 +537,7 @@
       <label class="settings-field-label" for="diceSound">Sunet zaruri</label>
       <div class="settings-dice-row">
         <select class="settings-select" id="diceSound" name="diceSound">
-          <option value="soft">Discret — o singură atingere moale</option>
+          <option value="soft">Discret — atingeri moi, fără zornăit</option>
           <option value="chime">Ton blând — notă muzicală, fără zgomot</option>
           <option value="felt">Realist — pe pâslă</option>
           <option value="wood">Realist — pe masă de lemn</option>
@@ -1186,11 +1203,20 @@
         const pick = list => list[Math.floor(Math.random() * list.length)];
         const jitter = amount => (Math.random() - 0.5) * amount;
         const landing = 0.475; // momentul în care zarurile ating masa în animație
+        const pitchUp = 1.35;  // sunet mai ascuțit (zaruri mici, de plastic)
+        // Rostogolire finală: clicuri tot mai rare și mai încete până la ~1,7 s (sunet mai lung).
+        function rollingTail(samples, from, loudness) {
+          let level = loudness;
+          for (let t = from; t < 1.75 && samples.length; t += 0.055 + (t - from) * 0.16) {
+            playSample(pick(samples), t + jitter(0.01), level, 1.05 + Math.random() * 0.2);
+            level *= 0.8;
+          }
+        }
         function playSample(buffer, at, loudness, rate) {
           if (!buffer) return;
           const source = audioContext.createBufferSource();
           source.buffer = buffer;
-          source.playbackRate.value = rate || (0.92 + Math.random() * 0.16);
+          source.playbackRate.value = (rate || (0.92 + Math.random() * 0.16)) * pitchUp;
           const gain = audioContext.createGain();
           gain.gain.value = loudness;
           source.connect(gain); gain.connect(master);
@@ -1199,20 +1225,20 @@
         }
         if (style === 'chime') {
           // Notă blândă tip marimbă: sinus + armonică, atac lin, stingere lungă. O notă pe zar (pentatonic).
-          const notes = [523.25, 659.25, 783.99, 880, 1046.5];
+          const notes = [1046.5, 1318.5, 1568, 1760, 2093];
           for (let die = 0; die < soundingDice; die++) {
             const at = now + landing + die * 0.07;
             const frequency = notes[(die * 2 + Math.floor(Math.random() * 2)) % notes.length];
-            [[1, 0.5], [4, 0.06]].forEach(([multiple, level]) => {
+            [[1, 0.4], [3, 0.05]].forEach(([multiple, level]) => {
               const oscillator = audioContext.createOscillator();
               const gain = audioContext.createGain();
               oscillator.type = 'sine';
               oscillator.frequency.value = frequency * multiple;
               gain.gain.setValueAtTime(0.0001, at);
               gain.gain.linearRampToValueAtTime(level, at + 0.012);
-              gain.gain.exponentialRampToValueAtTime(0.0001, at + (multiple === 1 ? 0.9 : 0.25));
+              gain.gain.exponentialRampToValueAtTime(0.0001, at + (multiple === 1 ? 1.8 : 0.4));
               oscillator.connect(gain); gain.connect(master);
-              oscillator.start(at); oscillator.stop(at + 0.95);
+              oscillator.start(at); oscillator.stop(at + 1.85);
               oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
             });
           }
@@ -1223,9 +1249,12 @@
         if (!surfaceSamples.length) return;
         if (style === 'soft') {
           // Doar aterizarea, pe pâslă, ușor mai grav și fără zornăit sau sărituri.
-          for (let die = 0; die < soundingDice; die++) {
-            playSample(pick(surfaceSamples), landing + die * 0.05 + jitter(0.01), die ? 0.7 : 0.85, 0.82 + Math.random() * 0.08);
-          }
+          [[landing, 0.85], [0.825, 0.38], [1.075, 0.16]].forEach(([at, loudness]) => {
+            for (let die = 0; die < soundingDice; die++) {
+              playSample(pick(surfaceSamples), at + die * 0.05 + jitter(0.01), loudness * (die ? 0.8 : 1));
+            }
+          });
+          rollingTail(hitSamples, 1.15, 0.12);
           return;
         }
         // Realist: zornăit în mână (mai multe zaruri), aterizare + 2 sărituri, așezare.
@@ -1239,7 +1268,7 @@
             if (diceCount > 1 && hitSamples.length && bounceIndex < 2 && die === 1) playSample(pick(hitSamples), time + 0.02, loudness * 0.5);
           }
         });
-        if (hitSamples.length) playSample(pick(hitSamples), 1.2 + jitter(0.03), 0.1);
+        rollingTail(hitSamples, 1.15, 0.16);
       }
       function renderDiceStrip() {
         const show = diceSettings.enabled;
@@ -1768,6 +1797,72 @@
           oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
         });
       }
+      function launchFireworkBurst(x, y, color) {
+        const sparks = 26;
+        for (let i = 0; i < sparks; i++) {
+          const spark = document.createElement('div');
+          spark.className = 'firework-spark';
+          const angle = (Math.PI * 2 * i) / sparks + Math.random() * 0.2;
+          const distance = 70 + Math.random() * 70;
+          spark.style.left = `${x}px`; spark.style.top = `${y}px`;
+          spark.style.background = color;
+          spark.style.boxShadow = `0 0 8px ${color}`;
+          spark.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+          spark.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
+          document.body.append(spark);
+          spark.addEventListener('animationend', () => spark.remove());
+        }
+      }
+      function launchFireworksShow(seconds) {
+        const colors = ['#ffe397', '#ff99c9', '#82e6ce', '#8dbaff', '#ffbc8e', '#c5a9ff'];
+        const width = window.innerWidth / uiZoom, height = window.innerHeight / uiZoom;
+        const bursts = Math.round(seconds * 2.2);
+        for (let i = 0; i < bursts; i++) {
+          window.setTimeout(() => {
+            if (!winnerOverlayElement.classList.contains('is-open')) return;
+            launchFireworkBurst(width * (0.15 + Math.random() * 0.7), height * (0.1 + Math.random() * 0.45), colors[i % colors.length]);
+            playFireworkPop();
+          }, 300 + i * (seconds * 1000 / bursts) + Math.random() * 200);
+        }
+      }
+      function playFireworkPop() {
+        if (!expirationSoundEnabled) return;
+        const audioContext = expirationSoundAudioContext;
+        if (!audioContext || audioContext.state !== 'running') return;
+        const length = Math.floor(audioContext.sampleRate * 0.35);
+        const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 4) * (i < 300 ? 1 : 0.35);
+        const source = audioContext.createBufferSource(); source.buffer = buffer;
+        const filter = audioContext.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 1800 + Math.random() * 1500;
+        const gain = audioContext.createGain(); gain.gain.value = 0.18;
+        source.connect(filter); filter.connect(gain); gain.connect(audioContext.destination);
+        source.start();
+        source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+      }
+      function playLongCampaignFanfare() {
+        if (!expirationSoundEnabled) return;
+        const audioContext = expirationSoundAudioContext;
+        if (!audioContext || audioContext.state !== 'running') return;
+        const start = audioContext.currentTime + 0.05;
+        // Fanfară mai lungă (~3,5 s): temă ascendentă + acord final ținut.
+        const melody = [[523.25, 0, .18], [523.25, .2, .12], [659.25, .34, .18], [783.99, .54, .3], [659.25, .9, .16], [783.99, 1.08, .16],
+          [1046.5, 1.28, .5], [987.77, 1.82, .16], [1046.5, 2.0, .16], [1174.66, 2.18, .16], [1318.5, 2.38, 1.2]];
+        const chord = [[523.25, 2.38], [659.25, 2.38], [783.99, 2.38]];
+        const note = (frequency, delay, duration, level, type) => {
+          const oscillator = audioContext.createOscillator(); const gain = audioContext.createGain();
+          oscillator.type = type; oscillator.frequency.value = frequency;
+          gain.gain.setValueAtTime(0.0001, start + delay);
+          gain.gain.linearRampToValueAtTime(level, start + delay + 0.02);
+          gain.gain.setValueAtTime(level, start + delay + Math.max(0.02, duration - 0.08));
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + delay + duration + 0.25);
+          oscillator.connect(gain); gain.connect(audioContext.destination);
+          oscillator.start(start + delay); oscillator.stop(start + delay + duration + 0.3);
+          oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+        };
+        melody.forEach(([f, d, len]) => note(f, d, len, 0.22, 'triangle'));
+        chord.forEach(([f, d]) => note(f, d, 1.2, 0.09, 'sine'));
+      }
       function checkForCatanWinner() {
         const winnerIndex = playerNames.findIndex((_, i) => catanTotal(i) >= winningPoints());
         if (winnerIndex === -1) { announcedWinnerIndex = -1; return; }
@@ -1777,11 +1872,35 @@
         const winnerNameElement = document.getElementById('winnerName');
         winnerNameElement.textContent = `${playerNames[winnerIndex]} a câștigat!`;
         winnerNameElement.style.setProperty('--player-color', playerColorPalette[winnerIndex]);
-        document.getElementById('winnerSub').textContent = `${catanTotal(winnerIndex)} puncte de victorie · runda ${Math.floor(completedTurns / playerNames.length) + 1}`;
+        const round = Math.floor(completedTurns / playerNames.length) + 1;
+        const longCampaign = winningPoints() > 10;
+        document.getElementById('winnerSub').textContent = `${catanTotal(winnerIndex)} puncte de victorie · runda ${round}`;
+        document.getElementById('winnerKind').textContent = longCampaign ? `⚜️ Campanie lungă · ${winningPoints()} puncte ⚜️` : `Campanie scurtă · ${winningPoints()} puncte`;
+        document.getElementById('winnerTrophy').textContent = longCampaign ? '👑' : '🏆';
+        const stats = document.getElementById('winnerStats');
+        stats.replaceChildren();
+        if (longCampaign) {
+          const sevens = diceHistory.filter(e => e.v.length === 2 && e.v[0] + e.v[1] === 7).length;
+          const rollsByWinner = diceHistory.filter(e => e.p === winnerIndex).length;
+          [`🎲 ${diceHistory.length} aruncări`, `🥷 ${sevens} hoți`, `🔁 ${round} runde`,
+           catanScore.road === winnerIndex ? '🛤️ Cel mai lung drum' : null,
+           catanScore.army === winnerIndex ? '⚔️ Cea mai mare armată' : null,
+           rollsByWinner ? null : null].filter(Boolean).forEach(text => {
+            const chip = document.createElement('span'); chip.textContent = text; stats.append(chip);
+          });
+        }
+        winnerOverlayElement.classList.toggle('is-epic', longCampaign);
         winnerOverlayElement.classList.add('is-open');
-        launchConfetti();
-        playVictoryFanfare();
-        if (typeof navigator.vibrate === 'function') navigator.vibrate([100, 60, 100, 60, 300]);
+        if (longCampaign) {
+          launchConfetti(); window.setTimeout(launchConfetti, 1400); window.setTimeout(launchConfetti, 2800);
+          launchFireworksShow(5);
+          playLongCampaignFanfare();
+          if (typeof navigator.vibrate === 'function') navigator.vibrate([120, 70, 120, 70, 120, 70, 500, 150, 600]);
+        } else {
+          launchConfetti();
+          playVictoryFanfare();
+          if (typeof navigator.vibrate === 'function') navigator.vibrate([100, 60, 100, 60, 300]);
+        }
       }
       function startNewGame() {
         resetCatanScore();
