@@ -12,3 +12,6 @@ Instalată pe telefon rulează în fullscreen și ține ecranul aprins. Funcțio
 
 ## Actualizare
 Modifică fișierele, crește `CACHE_VERSION` în `sw.js` și fă push pe `main` — GitHub Pages republică automat.
+
+## Credite
+Sunetele zarurilor (`sounds/`) provin din pachetul [@3d-dice/dice-box-threejs](https://www.npmjs.com/package/@3d-dice/dice-box-threejs), licență MIT — vezi `sounds/LICENSE-dice-box-threejs.txt`.

@@ -277,6 +277,7 @@
     @media(max-height:680px){main:has(.quick-score.is-visible) .end{min-height:112px;padding:14px}main:has(.quick-score.is-visible) .players{margin-bottom:12px}}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
+    .sound-preview{border:0;border-radius:12px;padding:12px 14px;font-weight:800;white-space:nowrap}
     @media(prefers-reduced-motion:reduce){.die-wrap.is-rolling,.die-wrap.is-rolling::after{animation:none}.die{transition-duration:.35s}}
     @media(max-height:680px){.players{margin-bottom:12px}.player{min-height:75px;padding:8px 4px;gap:5px}.center{min-height:215px;padding:2px 0}.end{min-height:clamp(150px,calc(var(--uvh) * 25),200px)}.actions{padding:10px 0 0}}
     @media(max-height:560px){.center{min-height:185px}.timer-frame{width:min(calc(var(--uvw) * 54),160px)}.name{font-size:42px}.timer-readout{font-size:22px}.timer-warning{font-size:9px;bottom:11%}.subtitle,.hint{font-size:12px}.players{margin-bottom:10px}.player{min-height:64px}.end{min-height:125px;padding:16px}.actions{padding-top:4px}}
@@ -487,6 +488,15 @@
         <option value="3">3 zaruri</option><option value="4">4 zaruri</option>
         <option value="5">5 zaruri</option><option value="6">6 zaruri</option>
       </select>
+      <label class="settings-field-label" for="diceSound">Sunet zaruri</label>
+      <div class="settings-dice-row">
+        <select class="settings-select" id="diceSound" name="diceSound">
+          <option value="wood">Masă de lemn</option>
+          <option value="felt">Pâslă (mai încet)</option>
+          <option value="off">Fără sunet de zar</option>
+        </select>
+        <button type="button" class="cancel sound-preview" id="diceSoundPreview">▶ Ascultă</button>
+      </div>
       <p class="settings-note">Cu zarurile pornite, butonul mare devine „[Următorul], dă cu zarul”: încheie tura și aruncă automat zarurile pentru jucătorul următor. Atinge rezultatul de sub cronometru ca să arunci din nou.</p>
       <div class="settings-divider"></div>
       <span class="settings-field-label">🎲 Jocuri de societate</span>
@@ -595,6 +605,7 @@
         if (!WebAudioContext) return;
         try {
           if (!expirationSoundAudioContext) expirationSoundAudioContext = new WebAudioContext();
+          preloadDiceSamples();
           if (expirationSoundAudioContext.state === 'suspended') {
             expirationSoundAudioContext.resume().catch(() => {});
           }
@@ -764,6 +775,7 @@
         diceCountSelectElement.value = String(diceSettings.count);
         diceCountSelectElement.disabled = !diceSettings.enabled;
         gameCatanCheckboxElement.checked = gameSettings.catan;
+        document.getElementById('diceSound').value = diceSettings.sound || 'wood';
         if (typeof settingsDialog.showModal === 'function') settingsDialog.showModal();
         else settingsDialog.setAttribute('open', '');
       }
@@ -819,9 +831,10 @@
         }
         gameSettings = { catan: gameCatanCheckboxElement.checked };
         saveGameSettings();
+        const chosenDiceSound = document.getElementById('diceSound').value;
         diceSettings = gameSettings.catan
-          ? { enabled: true, count: 2 }
-          : { enabled: diceEnabledCheckboxElement.checked, count: Number(diceCountSelectElement.value) };
+          ? { enabled: true, count: 2, sound: chosenDiceSound }
+          : { enabled: diceEnabledCheckboxElement.checked, count: Number(diceCountSelectElement.value), sound: chosenDiceSound };
         saveDiceSettings();
         renderDiceStrip();
         displayCurrentPlayerAndRound();
@@ -991,9 +1004,12 @@
       function loadDiceSettings() {
         try {
           const saved = JSON.parse(localStorage.getItem(diceSettingsStorageKey));
-          if (saved && typeof saved.enabled === 'boolean' && Number.isInteger(saved.count) && saved.count >= 1 && saved.count <= 6) return saved;
+          if (saved && typeof saved.enabled === 'boolean' && Number.isInteger(saved.count) && saved.count >= 1 && saved.count <= 6) {
+            if (!['wood', 'felt', 'off'].includes(saved.sound)) saved.sound = 'wood';
+            return saved;
+          }
         } catch (_) { /* implicit */ }
-        return { enabled: false, count: 2 };
+        return { enabled: false, count: 2, sound: 'wood' };
       }
       function saveDiceSettings() {
         try { localStorage.setItem(diceSettingsStorageKey, JSON.stringify(diceSettings)); } catch (_) {}
@@ -1054,75 +1070,69 @@
         }
         return dice;
       }
-      function playDiceRattleSound() {
-        if (!expirationSoundEnabled || document.visibilityState !== 'visible') return;
+      // ===== Sunet zaruri din înregistrări reale =====
+      // Mostre: @3d-dice/dice-box-threejs (licență MIT) — vezi sounds/LICENSE-dice-box-threejs.txt
+      const diceSampleFiles = {
+        wood: [1, 2, 3, 4, 5, 6, 7].map(n => `./sounds/wood${n}.mp3`),
+        felt: [1, 2, 3, 4, 5, 6, 7].map(n => `./sounds/felt${n}.mp3`),
+        hit: Array.from({ length: 15 }, (_, i) => `./sounds/hit${i + 1}.mp3`)
+      };
+      const decodedDiceSamples = { wood: [], felt: [], hit: [] };
+      let diceSamplesRequested = false;
+      function preloadDiceSamples() {
+        const audioContext = expirationSoundAudioContext;
+        if (diceSamplesRequested || !audioContext) return;
+        diceSamplesRequested = true;
+        Object.entries(diceSampleFiles).forEach(([kind, urls]) => urls.forEach(url => {
+          fetch(url).then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+            .then(data => new Promise((resolve, reject) => audioContext.decodeAudioData(data, resolve, reject)))
+            .then(buffer => decodedDiceSamples[kind].push(buffer))
+            .catch(() => { /* fără acea mostră */ });
+        }));
+      }
+      function playDiceRattleSound(forceSurface) {
+        const surface = forceSurface || diceSettings.sound || 'wood';
+        if (surface === 'off' || !expirationSoundEnabled || document.visibilityState !== 'visible') return;
         const audioContext = expirationSoundAudioContext;
         if (!audioContext || audioContext.state !== 'running') return;
-        const now = audioContext.currentTime + 0.005;
-        const extraDice = Math.min(diceSettings.count, 4) - 1;
-        // Lanț comun: volum general redus + filtru trece-jos pentru un sunet cald, nu ascuțit.
+        preloadDiceSamples();
+        const surfaceSamples = decodedDiceSamples[surface];
+        const hitSamples = decodedDiceSamples.hit;
+        if (!surfaceSamples.length) return;
+        const now = audioContext.currentTime + 0.01;
+        const diceCount = diceSettings.count;
+        const soundingDice = Math.min(diceCount, 4);
         const master = audioContext.createGain();
-        master.gain.value = 0.55;
-        const warmth = audioContext.createBiquadFilter();
-        warmth.type = 'lowpass';
-        warmth.frequency.value = 2600;
-        warmth.Q.value = 0.5;
-        master.connect(warmth); warmth.connect(audioContext.destination);
-        window.setTimeout(() => { master.disconnect(); warmth.disconnect(); }, 2200);
-        // „Toc” moale de plastic/lemn: zgomot cu atac lin și stingere rapidă.
-        function tock(at, loudness, length, centerFrequency) {
-          const sampleCount = Math.floor(audioContext.sampleRate * length);
-          const attackSamples = Math.floor(audioContext.sampleRate * 0.0025);
-          const buffer = audioContext.createBuffer(1, sampleCount, audioContext.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let i = 0; i < sampleCount; i++) {
-            const attack = i < attackSamples ? i / attackSamples : 1;
-            data[i] = (Math.random() * 2 - 1) * attack * Math.pow(1 - i / sampleCount, 3.2);
-          }
+        master.gain.value = (surface === 'felt' ? 1.0 : 0.7) / Math.sqrt(soundingDice);
+        master.connect(audioContext.destination);
+        window.setTimeout(() => master.disconnect(), 2500);
+        const pick = list => list[Math.floor(Math.random() * list.length)];
+        const jitter = amount => (Math.random() - 0.5) * amount;
+        function play(buffer, at, loudness) {
+          if (!buffer) return;
           const source = audioContext.createBufferSource();
           source.buffer = buffer;
-          const body = audioContext.createBiquadFilter();
-          body.type = 'bandpass';
-          body.frequency.value = centerFrequency;
-          body.Q.value = 0.9;
+          source.playbackRate.value = 0.92 + Math.random() * 0.16; // variație naturală
           const gain = audioContext.createGain();
           gain.gain.value = loudness;
-          source.connect(body); body.connect(gain); gain.connect(master);
-          source.start(now + at);
-          source.onended = () => { source.disconnect(); body.disconnect(); gain.disconnect(); };
+          source.connect(gain); gain.connect(master);
+          source.start(now + Math.max(0, at));
+          source.onended = () => { source.disconnect(); gain.disconnect(); };
         }
-        // Rezonanță scurtă și moale a mesei, fără „bufnitură”.
-        function knock(at, loudness) {
-          const oscillator = audioContext.createOscillator();
-          const gain = audioContext.createGain();
-          oscillator.type = 'sine';
-          oscillator.frequency.value = 220 + Math.random() * 40;
-          gain.gain.setValueAtTime(0.0001, now + at);
-          gain.gain.linearRampToValueAtTime(loudness, now + at + 0.008);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.07);
-          oscillator.connect(gain); gain.connect(master);
-          oscillator.start(now + at); oscillator.stop(now + at + 0.08);
-          oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+        // Zarurile se lovesc între ele în mână (doar dacă sunt mai multe).
+        if (diceCount > 1 && hitSamples.length) {
+          for (let t = 0.03; t < 0.36; t += 0.05 + Math.random() * 0.05) play(pick(hitSamples), t, 0.18 + Math.random() * 0.12);
         }
-        const jitter = () => (Math.random() - 0.5) * 0.02;
-        // 1) Zornăit discret în mână (0–0,42 s).
-        for (let t = 0; t < 0.42; t += 0.045 + Math.random() * 0.025) {
-          tock(t, 0.07 + Math.random() * 0.05, 0.028, 1700 + Math.random() * 900);
-        }
-        // 2) Aterizare (~0,47 s) și sărituri, moi.
-        [[0.47, 0.42], [0.65, 0.27], [0.81, 0.17], [0.93, 0.1]].forEach(([at, loudness]) => {
-          for (let die = 0; die <= extraDice; die++) {
-            const offset = die * 0.035 + jitter();
-            tock(at + offset, loudness, 0.045, 900 + Math.random() * 500);
-            knock(at + offset, loudness * 0.18);
+        // Impacturi sincronizate cu animația: aterizare 0,475 s, săritură 0,825 s, 1,075 s.
+        [[0.475, 1.0], [0.825, 0.42], [1.075, 0.17]].forEach(([at, loudness], bounceIndex) => {
+          for (let die = 0; die < soundingDice; die++) {
+            const time = at + die * 0.045 + jitter(0.012);
+            play(pick(surfaceSamples), time, loudness * (die ? 0.85 : 1));
+            if (diceCount > 1 && hitSamples.length && bounceIndex < 2 && die === 1) play(pick(hitSamples), time + 0.02, loudness * 0.5);
           }
         });
-        // 3) Rostogolire care se stinge (~1,0–1,45 s).
-        let loudness = 0.14;
-        for (let t = 0.99; t < 1.45; t += 0.05 + (t - 0.99) * 0.12) {
-          tock(t + jitter(), loudness, 0.03, 1300 + Math.random() * 700);
-          loudness *= 0.78;
-        }
+        // Ultima așezare, foarte încet, când se oprește rotirea.
+        if (hitSamples.length) play(pick(hitSamples), 1.2 + jitter(0.03), 0.1);
       }
       function renderDiceStrip() {
         const show = diceSettings.enabled;
@@ -1686,6 +1696,17 @@
       document.getElementById('winnerNewGame').addEventListener('click', () => { winnerOverlayElement.classList.remove('is-open'); startNewGame(); });
       document.getElementById('winnerClose').addEventListener('click', () => winnerOverlayElement.classList.remove('is-open'));
 
+      document.getElementById('diceSoundPreview').addEventListener('click', () => {
+        activateExpirationSoundAfterUserInteraction();
+        const surface = document.getElementById('diceSound').value;
+        if (surface === 'off') return;
+        if (!expirationSoundEnabled) { settingsErrorElement.textContent = 'Sunetul aplicației e oprit (iconița 🔈 de sus).'; return; }
+        const tryPlay = attempt => {
+          if (decodedDiceSamples[surface].length || attempt > 20) playDiceRattleSound(surface);
+          else window.setTimeout(() => tryPlay(attempt + 1), 100);
+        };
+        tryPlay(0);
+      });
       diceStripButton.addEventListener('click', rollDiceWithAnimation);
       diceOverlayElement.addEventListener('click', closeDiceOverlay);
       diceEnabledCheckboxElement.addEventListener('change', () => { diceCountSelectElement.disabled = !diceEnabledCheckboxElement.checked; });

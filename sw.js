@@ -1,5 +1,5 @@
 // PWA offline cache — schimbă versiunea când actualizezi fișierele aplicației.
-const CACHE_VERSION = 'ture-app-pwa-v14';
+const CACHE_VERSION = 'ture-app-pwa-v15';
 const REQUIRED_OFFLINE_FILES = [
   './',
   './index.html',
@@ -7,7 +7,36 @@ const REQUIRED_OFFLINE_FILES = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  './sounds/wood1.mp3',
+  './sounds/wood2.mp3',
+  './sounds/wood3.mp3',
+  './sounds/wood4.mp3',
+  './sounds/wood5.mp3',
+  './sounds/wood6.mp3',
+  './sounds/wood7.mp3',
+  './sounds/felt1.mp3',
+  './sounds/felt2.mp3',
+  './sounds/felt3.mp3',
+  './sounds/felt4.mp3',
+  './sounds/felt5.mp3',
+  './sounds/felt6.mp3',
+  './sounds/felt7.mp3',
+  './sounds/hit1.mp3',
+  './sounds/hit2.mp3',
+  './sounds/hit3.mp3',
+  './sounds/hit4.mp3',
+  './sounds/hit5.mp3',
+  './sounds/hit6.mp3',
+  './sounds/hit7.mp3',
+  './sounds/hit8.mp3',
+  './sounds/hit9.mp3',
+  './sounds/hit10.mp3',
+  './sounds/hit11.mp3',
+  './sounds/hit12.mp3',
+  './sounds/hit13.mp3',
+  './sounds/hit14.mp3',
+  './sounds/hit15.mp3'
 ];
 
 self.addEventListener('install', event => {
