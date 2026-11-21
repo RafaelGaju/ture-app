@@ -277,6 +277,7 @@
     .score-toast.is-shown{transform:translate(-50%,0);visibility:visible;transition:transform .25s}
     @media(max-height:680px){.quick-score{margin:-4px 0 10px}.quick-score button{min-height:40px}.quick-score button b{font-size:15px}}
     @media(max-height:680px){main:has(.quick-score.is-visible) .end{min-height:112px;padding:14px}main:has(.quick-score.is-visible) .players{margin-bottom:12px}}
+    .goal-chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#3b3620;color:#ffe397;font-weight:800;font-size:.92em;white-space:nowrap}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     .sound-preview{border:0;border-radius:12px;padding:12px 14px;font-weight:800;white-space:nowrap}
@@ -285,6 +286,7 @@
     @media(max-height:560px){.center{min-height:185px}.timer-frame{width:min(calc(var(--uvw) * 54),160px)}.name{font-size:42px}.timer-readout{font-size:22px}.timer-warning{font-size:9px;bottom:11%}.subtitle,.hint{font-size:12px}.players{margin-bottom:10px}.player{min-height:64px}.end{min-height:125px;padding:16px}.actions{padding-top:4px}}
     /* Multe jucători (4–6) pe telefon în portret: buton și carduri mai compacte */
     main:has(.players.has-many) .player .vp{white-space:nowrap}
+    @media not ((orientation: landscape) and (min-width: 700px)){
     main:has(.players.has-many):has(.quick-score.is-visible) .center{min-height:0;padding:4px 0 8px}
     main:has(.players.has-many):has(.quick-score.is-visible) .timer-frame{width:min(calc(var(--uvw) * 62),clamp(170px,calc(var(--uvh) * 25),240px))}
     main:has(.players.has-many):has(.quick-score.is-visible) .players{margin-bottom:16px;gap:6px}
@@ -294,6 +296,7 @@
     main:has(.players.has-many):has(.quick-score.is-visible) .end{min-height:clamp(96px,calc(var(--uvh) * 15),150px);padding:14px 16px}
     main:has(.players.has-many):has(.quick-score.is-visible) .end.is-dice .end-main{font-size:clamp(24px,calc(var(--uvw) * 6.4),30px)}
     main:has(.players.has-many):has(.quick-score.is-visible) .actions{padding-top:10px}
+    }
     /* Fereastra de scor cu mulți jucători pe ecran îngust */
     @media(max-width:639px){
       .sc-list.is-many{gap:7px}
@@ -963,6 +966,12 @@
         roundTextElement.textContent = `Runda ${Math.floor(completedTurns / playerNames.length) + 1}`;
         nextTextElement.textContent = playerNames.length === 1
           ? 'Un singur jucător' : `Urmează ${playerNames[nextPlayerIndex]}`;
+        if (gameSettings.catan) {
+          const goal = document.createElement('span');
+          goal.className = 'goal-chip';
+          goal.textContent = `🏁 se câștigă la ${gameSettings.target || 10}`;
+          nextTextElement.append(goal);
+        }
         resetDescriptionElement.textContent = `Se revine la ${playerNames[0]}, runda 1. Cronometrul nu se resetează.`;
         document.title = `Ture — ${playerNames.join(' · ')}`;
 
