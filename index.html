@@ -1395,6 +1395,7 @@
         diceResultElement.classList.remove('is-shown');
         diceResultElement.textContent = '';
         robberPanelElement.classList.remove('is-shown', 'is-reserved');
+        [diceWhoElement, diceStageElement, diceResultElement].forEach(element => { element.style.transform = ''; element.style.transition = ''; });
         robberPanelElement.replaceChildren();
         diceOverlayElement.classList.remove('is-robber');
         const dice = buildDiceStage(count);
@@ -1528,18 +1529,30 @@
         ok.className = 'robber-ok';
         ok.textContent = 'Am înțeles · 30';
         robberPanelElement.append(title, sub, steps, ok);
-        robberPanelElement.classList.add('is-reserved');
-        // Fiecare pas pe un singur rând: micșorează textul doar cât e nevoie.
+      }
+      function revealCatanRobberInstructions() {
+        const ok = robberPanelElement.querySelector('.robber-ok');
+        // Zarurile au stat în aceeași poziție ca la orice aruncare (fără indiciu că urmează hoțul).
+        // Acum cardul apare și conținutul de deasupra alunecă lin în sus (FLIP), fără săritură.
+        const movingElements = [diceWhoElement, diceStageElement, diceResultElement];
+        const topsBefore = movingElements.map(element => element.getBoundingClientRect().top);
+        robberPanelElement.classList.add('is-shown');
         robberPanelElement.querySelectorAll('.robber-steps li').forEach(item => {
           let size = 18;
           item.style.fontSize = `${size}px`;
           while (item.scrollWidth > item.clientWidth && size > 11) { size -= 0.5; item.style.fontSize = `${size}px`; }
         });
-      }
-      function revealCatanRobberInstructions() {
-        const ok = robberPanelElement.querySelector('.robber-ok');
-        robberPanelElement.classList.remove('is-reserved');
-        robberPanelElement.classList.add('is-shown');
+        movingElements.forEach((element, index) => {
+          const shift = topsBefore[index] - element.getBoundingClientRect().top;
+          element.style.transition = 'none';
+          element.style.transform = `translateY(${shift / uiZoom}px)`;
+        });
+        void diceOverlayElement.offsetHeight;
+        movingElements.forEach(element => {
+          element.style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)';
+          element.style.transform = '';
+          element.addEventListener('transitionend', () => { element.style.transition = ''; }, { once: true });
+        });
         diceOverlayElement.classList.add('is-robber');
         playRobberSound();
         // Se închide singur după 30 s (ca și cum s-ar apăsa „Am înțeles”); tura NU trece mai departe.
