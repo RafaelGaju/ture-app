@@ -22,7 +22,7 @@
     main{width:min(100%,480px);min-height:calc(var(--uvh) * 100);margin:auto;padding:max(24px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:0}
     header{display:flex;justify-content:space-between;align-items:center;gap:12px}
     .eyebrow{font-size:12px;font-weight:800;letter-spacing:.20em;color:#a9b1cc;text-transform:uppercase}
-    .round{font-size:13px;font-weight:700;color:#c8cce0;padding:9px 12px;border:1px solid #353b55;border-radius:999px;background:#20253a;white-space:nowrap}
+    .round{display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:1px;font-size:13px;font-weight:700;color:#c8cce0;padding:9px 12px;border:1px solid #353b55;border-radius:999px;background:#20253a;white-space:nowrap}
     .header-actions{display:flex;align-items:center;gap:8px}
     .fullscreen-toggle{width:43px;height:43px;border:1px solid #353b55;border-radius:13px;background:#20253a;color:#dce1f4;display:grid;place-items:center;padding:0;flex-shrink:0}
     .fullscreen-toggle svg{width:23px;height:23px}
@@ -310,6 +310,8 @@
     header{position:relative}
     header.goal-centered .goal-line{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
     header.goal-centered.has-goal .header-right{justify-content:flex-end}
+    .round small{font-size:10.5px;font-weight:700;color:#8e98b5;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+    .player .turn-elapsed{font-size:11px;font-weight:700;color:#8e98b5;font-variant-numeric:tabular-nums;line-height:1;opacity:.9}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     .settings-range{width:100%;accent-color:#aa9bff;height:32px}
@@ -320,6 +322,12 @@
     /* Multe jucători (4–6) pe telefon în portret: buton și carduri mai compacte */
     main:has(.players.has-many) .player .vp{white-space:nowrap}
     @media not ((orientation: landscape) and (min-width: 700px)){
+    main:has(.quick-score.is-visible) .center{min-height:0;padding:4px 0 10px}
+    main:has(.quick-score.is-visible) .timer-frame{width:min(calc(var(--uvw) * 70),clamp(180px,calc(var(--uvh) * 28),270px))}
+    main:has(.quick-score.is-visible) .players{margin-bottom:16px}
+    main:has(.quick-score.is-visible) .player{min-height:80px;padding:9px 5px;gap:5px}
+    main:has(.quick-score.is-visible) .end{min-height:clamp(110px,calc(var(--uvh) * 17),180px);padding:16px 18px}
+    main:has(.quick-score.is-visible) .actions{padding-top:12px}
     main:has(.players.has-many):has(.quick-score.is-visible) .center{min-height:0;padding:4px 0 8px}
     main:has(.players.has-many):has(.quick-score.is-visible) .timer-frame{width:min(calc(var(--uvw) * 62),clamp(170px,calc(var(--uvh) * 25),240px))}
     main:has(.players.has-many):has(.quick-score.is-visible) .players{margin-bottom:16px;gap:6px}
@@ -398,7 +406,7 @@
       <div class="header-right">
       <div class="goal-line" id="goalLine" hidden><span class="goal-long"></span><span class="goal-short"></span></div>
       <div class="header-actions">
-        <div class="round" id="roundText">Runda 1</div>
+        <div class="round" id="roundChip"><span id="roundText">Runda 1</span><small id="gameElapsed" title="Durata jocului">⏱ 0:00</small></div>
         <button type="button" class="sound-toggle" id="soundToggle" aria-label="Oprește sunetul" aria-pressed="true" title="Sunet pornit (atinge ecranul o dată pentru activarea audio)">
           <svg id="soundIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 5a10 10 0 0 1 0 14"/></svg>
         </button>
@@ -503,7 +511,7 @@
   <dialog id="resetDialog" aria-labelledby="resetTitle">
     <h2 id="resetTitle">Resetezi turele?</h2>
     <p id="resetDescription">Se revine la Miha, runda 1. Cronometrul nu se resetează.</p>
-    <label class="reset-option" id="resetExtrasLabel"><input type="checkbox" id="resetExtras" checked /> Joc nou: șterge și scorul și istoricul zarurilor</label>
+    <label class="reset-option" id="resetExtrasLabel"><input type="checkbox" id="resetExtras" checked /> Joc nou: repornește timpul jocului, șterge scorul și istoricul zarurilor</label>
     <div class="dialog-actions">
       <button class="cancel" id="cancelReset" type="button">Anulează</button>
       <button class="confirm" id="confirmReset" type="button">Resetează rundele</button>
@@ -884,6 +892,7 @@
           completedTurns = 0;
           saveCompletedTurnCount();
           resetCatanScore();
+          restartGameClock();
         }
         // Nu reporni tura. Durata se aplică la momentul de început existent.
         // Astfel scurgerea timpului nu este resetată când sunt modificate setările.
@@ -1000,8 +1009,36 @@
         }
         previousRemainingMilliseconds = millisecondsRemaining;
       }
+      // ===== Cronometre care numără în sus: tura curentă (în cardul jucătorului) și tot jocul =====
+      const gameStartStorageKey = 'ture-game-started-at-v1';
+      let gameStartedAtMilliseconds = (() => {
+        try { const v = Number(localStorage.getItem(gameStartStorageKey)); if (v > 0 && v <= Date.now() + 60000) return v; } catch (_) {}
+        return Date.now();
+      })();
+      try { localStorage.setItem(gameStartStorageKey, String(gameStartedAtMilliseconds)); } catch (_) {}
+      function restartGameClock() {
+        gameStartedAtMilliseconds = Date.now();
+        try { localStorage.setItem(gameStartStorageKey, String(gameStartedAtMilliseconds)); } catch (_) {}
+        lastRenderedElapsedSecond = -1;
+      }
+      function formatElapsed(milliseconds) {
+        const total = Math.max(0, Math.floor(milliseconds / 1000));
+        const hours = Math.floor(total / 3600), minutes = Math.floor((total % 3600) / 60), seconds = total % 60;
+        return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}` : `${minutes}:${String(seconds).padStart(2, '0')}`;
+      }
+      let lastRenderedElapsedSecond = -1;
+      function renderElapsedCounters(force) {
+        const now = Date.now();
+        const second = Math.floor(now / 1000);
+        if (!force && second === lastRenderedElapsedSecond) return;
+        lastRenderedElapsedSecond = second;
+        document.getElementById('gameElapsed').textContent = `⏱ ${formatElapsed(now - gameStartedAtMilliseconds)}`;
+        const turnElement = playersContainerElement.querySelector('.player.active .turn-elapsed');
+        if (turnElement) turnElement.textContent = formatElapsed(now - currentTurnTimerStartedAtMilliseconds);
+      }
       function keepCircularTimerSmoothlyUpdated() {
         renderCircularTimerAtCurrentTime();
+        renderElapsedCounters(false);
         window.requestAnimationFrame(keepCircularTimerSmoothlyUpdated);
       }
       function displayCurrentPlayerAndRound() {
@@ -1041,6 +1078,13 @@
           nameElement.title = playerName;
           playerElement.append(avatarElement, nameElement);
           decoratePlayerCardWithScore(playerElement, index);
+          if (index === currentPlayerIndex) {
+            const turnElapsed = document.createElement('span');
+            turnElapsed.className = 'turn-elapsed';
+            turnElapsed.title = 'Durata turei curente';
+            turnElapsed.textContent = formatElapsed(Date.now() - currentTurnTimerStartedAtMilliseconds);
+            playerElement.append(turnElapsed);
+          }
           playersContainerElement.append(playerElement);
         });
         undoButton.disabled = completedTurns === 0;
@@ -1978,6 +2022,7 @@
         if (typeof navigator.vibrate === 'function') navigator.vibrate([100, 60, 100, 60, 300]);
       }
       function startNewGame() {
+        restartGameClock();
         resetCatanScore();
         diceHistory = []; saveDiceHistory();
         lastDiceRoll = null; saveLastDiceRoll();
@@ -1995,7 +2040,7 @@
           button.setAttribute('aria-pressed', String(catanScore[button.dataset.award] === activeIndex));
         });
         playersContainerElement.classList.toggle('is-scoring', gameSettings.catan);
-        document.getElementById('resetExtrasLabel').hidden = !(diceSettings.enabled || gameSettings.catan);
+        document.getElementById('resetExtrasLabel').hidden = false;
       }
       function changeWinningPoints(delta) {
         gameSettings.target = Math.min(20, Math.max(5, winningPoints() + delta));
@@ -2074,6 +2119,7 @@
       document.getElementById('cancelReset').addEventListener('click', () => resetDialog.close());
       document.getElementById('confirmReset').addEventListener('click', () => {
         const resetExtras = document.getElementById('resetExtras');
+        if (resetExtras.checked) restartGameClock();
         if (!document.getElementById('resetExtrasLabel').hidden && resetExtras.checked) {
           resetCatanScore();
           diceHistory = []; saveDiceHistory();
