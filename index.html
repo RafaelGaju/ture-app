@@ -154,6 +154,18 @@
     .dice-result.is-shown{opacity:1;transform:none}
     .dice-result small{display:block;font-size:14px;font-weight:700;color:#aab3cf;margin-top:2px}
     .dice-close-hint{font-size:13px;color:#8e98b5;font-weight:650}
+    .robber-panel{display:none;width:min(92vw,400px);margin-top:6px;padding:16px 18px;border:1px solid #ff6a7d88;border-radius:18px;background:linear-gradient(160deg,#3a1624f2,#24101bf2);box-shadow:0 0 40px #ff3d5e33;text-align:left;animation:robber-in .35s ease-out}
+    .robber-panel.is-shown{display:block}
+    .robber-title{font-size:clamp(24px,7vw,30px);font-weight:900;color:#ff9bac;letter-spacing:-.02em;text-align:center}
+    .robber-sub{font-size:14px;color:#f3c4cd;text-align:center;margin:2px 0 10px;font-weight:650}
+    .robber-steps{margin:0;padding-left:22px;color:#fbe9ec;font-size:15px;line-height:1.45;font-weight:600}
+    .robber-steps li{margin:6px 0}
+    .robber-steps b{color:#fff}
+    .robber-ok{display:block;width:100%;margin-top:12px;border:0;border-radius:12px;padding:13px;background:#ff7287;color:#2a0d16;font-weight:900;font-size:16px}
+    @keyframes robber-in{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:none}}
+    .dice-overlay.is-robber{background:radial-gradient(ellipse at 50% 40%,#3b1426f7,#0b0510fc)}
+    .dice-strip.is-robber{border-color:#ff6a7d;background:#3a1624}
+    .dice-strip .robber-tag{color:#ff9bac;font-weight:900;margin-left:4px}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     @media(prefers-reduced-motion:reduce){.die-wrap.is-rolling,.die-wrap.is-rolling::after{animation:none}.die{transition-duration:.35s}}
@@ -208,6 +220,7 @@
     <div class="dice-who" id="diceWho"></div>
     <div class="dice-stage" id="diceStage"></div>
     <div class="dice-result" id="diceResult" role="status" aria-live="polite"></div>
+    <div class="robber-panel" id="robberPanel" role="alert"></div>
     <div class="dice-close-hint">Atinge oriunde pentru a închide</div>
   </div>
   <dialog id="resetDialog" aria-labelledby="resetTitle">
@@ -252,6 +265,13 @@
         <option value="5">5 zaruri</option><option value="6">6 zaruri</option>
       </select>
       <p class="settings-note">Cu zarurile pornite, butonul mare devine „[Următorul], dă cu zarul”: încheie tura și aruncă automat zarurile pentru jucătorul următor. Atinge rezultatul de sub cronometru ca să arunci din nou.</p>
+      <div class="settings-divider"></div>
+      <span class="settings-field-label">🎲 Jocuri de societate</span>
+      <label class="settings-no-timer" for="gameCatan">
+        <input id="gameCatan" name="gameCatan" type="checkbox" />
+        Catan
+      </label>
+      <p class="settings-note">Catan pornește automat 2 zaruri. Când pică 7 apare anunțul „Runda hoțului”, cu pașii de urmat.</p>
       <p class="settings-error" id="settingsError" role="alert"></p>
       <p class="settings-note">Setările cronometrului se aplică imediat, dar timpul scurs din tura curentă nu se reia de la zero. Doar „Încheie tura” pornește o tură nouă.</p>
       <div class="dialog-actions">
@@ -503,6 +523,7 @@
         diceEnabledCheckboxElement.checked = diceSettings.enabled;
         diceCountSelectElement.value = String(diceSettings.count);
         diceCountSelectElement.disabled = !diceSettings.enabled;
+        gameCatanCheckboxElement.checked = gameSettings.catan;
         if (typeof settingsDialog.showModal === 'function') settingsDialog.showModal();
         else settingsDialog.setAttribute('open', '');
       }
@@ -555,7 +576,11 @@
           if (configuredTimerDurationSeconds === null) stopPlayingExpirationSoundImmediately();
           renderCircularTimerAtCurrentTime();
         }
-        diceSettings = { enabled: diceEnabledCheckboxElement.checked, count: Number(diceCountSelectElement.value) };
+        gameSettings = { catan: gameCatanCheckboxElement.checked };
+        saveGameSettings();
+        diceSettings = gameSettings.catan
+          ? { enabled: true, count: 2 }
+          : { enabled: diceEnabledCheckboxElement.checked, count: Number(diceCountSelectElement.value) };
         saveDiceSettings();
         renderDiceStrip();
         displayCurrentPlayerAndRound();
@@ -811,6 +836,7 @@
         diceStripButton.classList.toggle('is-visible', show);
         if (!show) return;
         diceStripButton.replaceChildren();
+        diceStripButton.classList.remove('is-robber');
         if (!lastDiceRoll || lastDiceRoll.length !== diceSettings.count) {
           const hint = document.createElement('span');
           hint.className = 'dice-hint';
@@ -829,6 +855,14 @@
           total.className = 'dice-total';
           total.textContent = `= ${lastDiceRoll.reduce((a, b) => a + b, 0)}`;
           diceStripButton.append(total);
+        }
+        const robberRoll = rollIsCatanRobber(lastDiceRoll);
+        diceStripButton.classList.toggle('is-robber', robberRoll);
+        if (robberRoll) {
+          const tag = document.createElement('span');
+          tag.className = 'robber-tag';
+          tag.textContent = '🦹 Hoțul';
+          diceStripButton.append(tag);
         }
         diceStripButton.setAttribute('aria-label', `Ultima aruncare: ${lastDiceRoll.join(', ')}. Atinge pentru a arunca din nou.`);
       }
@@ -851,6 +885,9 @@
         diceWhoElement.style.setProperty('--player-color', playerColorPalette[currentPlayerIndex]);
         diceResultElement.classList.remove('is-shown');
         diceResultElement.textContent = '';
+        robberPanelElement.classList.remove('is-shown');
+        robberPanelElement.replaceChildren();
+        diceOverlayElement.classList.remove('is-robber');
         const dice = buildDiceStage(count);
         diceOverlayElement.classList.add('is-open');
         diceOverlayElement.setAttribute('aria-hidden', 'false');
@@ -888,7 +925,8 @@
           }
           diceResultElement.classList.add('is-shown');
           renderDiceStrip();
-          diceAutoCloseTimeoutId = window.setTimeout(closeDiceOverlay, 2600);
+          if (rollIsCatanRobber(values)) showCatanRobberInstructions(playerNames[currentPlayerIndex]);
+          else diceAutoCloseTimeoutId = window.setTimeout(closeDiceOverlay, 2600);
         }, 1350 + count * 45);
       }
       function updateEndTurnButtonLabel() {
@@ -906,6 +944,84 @@
           endTurnIconElement.innerHTML = '<path d="M5 12h14m-6-6 6 6-6 6" />';
         }
       }
+      // ===== Jocuri de societate =====
+      const gamesStorageKey = 'ture-board-games-v1';
+      const gameCatanCheckboxElement = document.getElementById('gameCatan');
+      const robberPanelElement = document.getElementById('robberPanel');
+      let gameSettings = loadGameSettings();
+      function loadGameSettings() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(gamesStorageKey));
+          if (saved && typeof saved.catan === 'boolean') return saved;
+        } catch (_) {}
+        return { catan: false };
+      }
+      function saveGameSettings() {
+        try { localStorage.setItem(gamesStorageKey, JSON.stringify(gameSettings)); } catch (_) {}
+      }
+      function rollIsCatanRobber(values) {
+        return gameSettings.catan && Array.isArray(values) && values.length === 2 && values[0] + values[1] === 7;
+      }
+      function playRobberSound() {
+        if (!expirationSoundEnabled || document.visibilityState !== 'visible') return;
+        const audioContext = expirationSoundAudioContext;
+        if (!audioContext || audioContext.state !== 'running') return;
+        const start = audioContext.currentTime + 0.02;
+        [[392, 0, .22], [330, .24, .22], [262, .48, .22], [196, .74, .6]].forEach(([frequency, delay, duration]) => {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = 'sawtooth';
+          oscillator.frequency.setValueAtTime(frequency, start + delay);
+          gain.gain.setValueAtTime(0.0001, start + delay);
+          gain.gain.exponentialRampToValueAtTime(0.32, start + delay + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + delay + duration);
+          oscillator.connect(gain); gain.connect(audioContext.destination);
+          oscillator.start(start + delay); oscillator.stop(start + delay + duration + 0.03);
+          oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+        });
+      }
+      function showCatanRobberInstructions(playerName) {
+        robberPanelElement.replaceChildren();
+        const title = document.createElement('div');
+        title.className = 'robber-title';
+        title.textContent = '🦹 Runda hoțului!';
+        const sub = document.createElement('div');
+        sub.className = 'robber-sub';
+        sub.textContent = 'A picat 7 — nimeni nu primește resurse.';
+        const steps = document.createElement('ol');
+        steps.className = 'robber-steps';
+        const stepContents = [
+          ['Oricine are ', 'mai mult de 7 cărți', ' de resurse dă ', 'jumătate', ' (rotunjit în jos).'],
+          ['', playerName, ' mută hoțul pe ', 'alt teren', '.'],
+          ['', playerName, ' fură ', 'o carte la întâmplare', ' de la un jucător cu așezare sau oraș lângă acel teren.']
+        ];
+        stepContents.forEach(parts => {
+          const item = document.createElement('li');
+          parts.forEach((part, index) => {
+            if (!part) return;
+            if (index % 2 === 1) { const bold = document.createElement('b'); bold.textContent = part; item.append(bold); }
+            else item.append(part);
+          });
+          steps.append(item);
+        });
+        const ok = document.createElement('button');
+        ok.type = 'button';
+        ok.className = 'robber-ok';
+        ok.textContent = 'Am înțeles';
+        robberPanelElement.append(title, sub, steps, ok);
+        robberPanelElement.classList.add('is-shown');
+        diceOverlayElement.classList.add('is-robber');
+        playRobberSound();
+        if (typeof navigator.vibrate === 'function') navigator.vibrate([220, 90, 220, 90, 450]);
+      }
+      gameCatanCheckboxElement.addEventListener('change', () => {
+        if (gameCatanCheckboxElement.checked) {
+          diceEnabledCheckboxElement.checked = true;
+          diceCountSelectElement.value = '2';
+          diceCountSelectElement.disabled = false;
+        }
+      });
+
       diceStripButton.addEventListener('click', rollDiceWithAnimation);
       diceOverlayElement.addEventListener('click', closeDiceOverlay);
       diceEnabledCheckboxElement.addEventListener('change', () => { diceCountSelectElement.disabled = !diceEnabledCheckboxElement.checked; });
