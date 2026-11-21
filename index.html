@@ -311,7 +311,8 @@
     header.goal-centered .goal-line{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
     header.goal-centered.has-goal .header-right{justify-content:flex-end}
     .round small{font-size:10.5px;font-weight:700;color:#8e98b5;font-variant-numeric:tabular-nums;letter-spacing:.02em}
-    .player .turn-elapsed{font-size:11px;font-weight:700;color:#8e98b5;font-variant-numeric:tabular-nums;line-height:1;opacity:.9}
+    .end{position:relative}
+    .end .turn-elapsed{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:13px;font-weight:500;letter-spacing:.06em;color:#11152c;opacity:.38;font-variant-numeric:tabular-nums;pointer-events:none}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     .settings-range{width:100%;accent-color:#aa9bff;height:32px}
@@ -375,6 +376,10 @@
       .timer-readout{font-size:clamp(24px,min(calc(var(--uvw) * 3.4),calc(var(--uvh) * 5.5)),40px)}
       .players{grid-column:2;grid-row:2;margin:clamp(8px,calc(var(--uvh) * 3),28px) 0 14px}
       .players.has-many{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .players.count-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .players.count-5{grid-template-columns:repeat(6,minmax(0,1fr))}
+      .players.count-5 .player{grid-column:span 2}
+      .players.count-5 .player:nth-child(4){grid-column:2 / span 2}
       .quick-score{grid-column:2;grid-row:3;margin:0 0 14px}
       .quick-score button{min-height:clamp(42px,calc(var(--uvh) * 7),58px);font-size:clamp(11.5px,calc(var(--uvw) * 1.4),14px)}
       .quick-score button b{display:block;font-size:clamp(16px,calc(var(--uvw) * 2),22px)}
@@ -452,7 +457,7 @@
       <span class="qs-sep" aria-hidden="true"></span>
       <button type="button" class="qs-undo" id="quickScoreUndo" aria-label="Anulează ultimul punct" disabled>↶</button>
     </div>
-    <button class="end" id="endTurn" type="button"><span class="end-text"><span class="end-main" id="endTurnMain">Încheie tura</span><span class="end-sub" id="endTurnSub"></span></span><svg id="endTurnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
+    <button class="end" id="endTurn" type="button"><span class="turn-elapsed" id="turnElapsed" title="Durata turei curente" aria-hidden="true">⏱ 0:00</span><span class="end-text"><span class="end-main" id="endTurnMain">Încheie tura</span><span class="end-sub" id="endTurnSub"></span></span><svg id="endTurnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
     <div class="actions">
       <button type="button" id="undo" class="small">↶ Înapoi</button>
       <button type="button" id="openStats" class="small" hidden>📊 Zaruri</button>
@@ -1033,8 +1038,7 @@
         if (!force && second === lastRenderedElapsedSecond) return;
         lastRenderedElapsedSecond = second;
         document.getElementById('gameElapsed').textContent = `⏱ ${formatElapsed(now - gameStartedAtMilliseconds)}`;
-        const turnElement = playersContainerElement.querySelector('.player.active .turn-elapsed');
-        if (turnElement) turnElement.textContent = formatElapsed(now - currentTurnTimerStartedAtMilliseconds);
+        document.getElementById('turnElapsed').textContent = `⏱ ${formatElapsed(now - currentTurnTimerStartedAtMilliseconds)}`;
       }
       function keepCircularTimerSmoothlyUpdated() {
         renderCircularTimerAtCurrentTime();
@@ -1063,6 +1067,7 @@
         document.title = `Ture — ${playerNames.join(' · ')}`;
 
         playersContainerElement.classList.toggle('has-many', playerNames.length > 3);
+        [4, 5, 6].forEach(n => playersContainerElement.classList.toggle(`count-${n}`, playerNames.length === n));
         playersContainerElement.replaceChildren();
         playerNames.forEach((playerName, index) => {
           const playerElement = document.createElement('div');
@@ -1078,13 +1083,6 @@
           nameElement.title = playerName;
           playerElement.append(avatarElement, nameElement);
           decoratePlayerCardWithScore(playerElement, index);
-          if (index === currentPlayerIndex) {
-            const turnElapsed = document.createElement('span');
-            turnElapsed.className = 'turn-elapsed';
-            turnElapsed.title = 'Durata turei curente';
-            turnElapsed.textContent = formatElapsed(Date.now() - currentTurnTimerStartedAtMilliseconds);
-            playerElement.append(turnElapsed);
-          }
           playersContainerElement.append(playerElement);
         });
         undoButton.disabled = completedTurns === 0;
@@ -2106,6 +2104,7 @@
       endTurnButton.addEventListener('click', () => {
         updateCompletedTurnsAndRefresh(completedTurns + 1);
         startNewTimerOnlyAfterEndingTurn();
+        renderElapsedCounters(true);
         if (diceSettings.enabled) rollDiceWithAnimation();
         else playShortTurnChangeFeedback();
       });
