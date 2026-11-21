@@ -2081,6 +2081,20 @@
       document.getElementById('diceVolume').addEventListener('input', event => {
         document.getElementById('diceVolumeLabel').textContent = `${event.target.value}%`;
       });
+      // Atingere în afara unei ferestre (pe fundalul întunecat) = închide, fără să salveze nimic.
+      [settingsDialog, resetDialog, statsDialog, scoreDialog].forEach(dialog => {
+        let pressStartedOutside = false;
+        const isOutside = event => {
+          if (event.target !== dialog) return false;
+          const box = dialog.getBoundingClientRect();
+          return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+        };
+        dialog.addEventListener('pointerdown', event => { pressStartedOutside = isOutside(event); });
+        dialog.addEventListener('click', event => {
+          if (pressStartedOutside && isOutside(event)) dialog.close();
+          pressStartedOutside = false;
+        });
+      });
       diceStripButton.addEventListener('click', rollDiceWithAnimation);
       diceOverlayElement.addEventListener('click', closeDiceOverlay);
       diceEnabledCheckboxElement.addEventListener('change', () => { diceCountSelectElement.disabled = !diceEnabledCheckboxElement.checked; });
