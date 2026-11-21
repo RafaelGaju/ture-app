@@ -280,6 +280,37 @@
     @media(prefers-reduced-motion:reduce){.die-wrap.is-rolling,.die-wrap.is-rolling::after{animation:none}.die{transition-duration:.35s}}
     @media(max-height:680px){.players{margin-bottom:12px}.player{min-height:75px;padding:8px 4px;gap:5px}.center{min-height:215px;padding:2px 0}.end{min-height:clamp(150px,calc(var(--uvh) * 25),200px)}.actions{padding:10px 0 0}}
     @media(max-height:560px){.center{min-height:185px}.timer-frame{width:min(calc(var(--uvw) * 54),160px)}.name{font-size:42px}.timer-readout{font-size:22px}.timer-warning{font-size:9px;bottom:11%}.subtitle,.hint{font-size:12px}.players{margin-bottom:10px}.player{min-height:64px}.end{min-height:125px;padding:16px}.actions{padding-top:4px}}
+    /* Multe jucători (4–6) pe telefon în portret: buton și carduri mai compacte */
+    main:has(.players.has-many) .player .vp{white-space:nowrap}
+    main:has(.players.has-many):has(.quick-score.is-visible) .center{min-height:0;padding:4px 0 8px}
+    main:has(.players.has-many):has(.quick-score.is-visible) .timer-frame{width:min(calc(var(--uvw) * 62),clamp(170px,calc(var(--uvh) * 25),240px))}
+    main:has(.players.has-many):has(.quick-score.is-visible) .players{margin-bottom:16px;gap:6px}
+    main:has(.players.has-many):has(.quick-score.is-visible) .player{min-height:56px;padding:5px 4px;gap:2px;border-radius:13px}
+    main:has(.players.has-many):has(.quick-score.is-visible) .circle{width:22px;height:22px;font-size:11px}
+    main:has(.players.has-many):has(.quick-score.is-visible) .quick-score{margin:-6px 0 12px}
+    main:has(.players.has-many):has(.quick-score.is-visible) .end{min-height:clamp(96px,calc(var(--uvh) * 15),150px);padding:14px 16px}
+    main:has(.players.has-many):has(.quick-score.is-visible) .end.is-dice .end-main{font-size:clamp(24px,calc(var(--uvw) * 6.4),30px)}
+    main:has(.players.has-many):has(.quick-score.is-visible) .actions{padding-top:10px}
+    /* Fereastra de scor cu mulți jucători pe ecran îngust */
+    @media(max-width:639px){
+      .sc-list.is-many{gap:7px}
+      .sc-list.is-many .sc-card{padding:8px 10px 9px 14px;border-radius:15px}
+      .sc-list.is-many .sc-avatar{flex-basis:28px;height:28px;font-size:13px}
+      .sc-list.is-many .sc-name{font-size:15px}
+      .sc-list.is-many .sc-who{display:flex;align-items:baseline;gap:7px}
+      .sc-list.is-many .sc-total{font-size:24px}
+      .sc-list.is-many .sc-bar{margin:6px 0 7px}
+      .sc-list.is-many .sc-seg{height:5px}
+      .sc-list.is-many .sc-stepper button{width:38px;height:38px;font-size:21px}
+      .sc-list.is-many .sc-base{min-width:44px}
+      .sc-list.is-many .sc-base b{font-size:18px}
+      .sc-list.is-many .sc-base span{display:none}
+      .sc-list.is-many .sc-award{font-size:12px;padding:2px 4px}
+      .sc-list.is-many .sc-award b{display:inline;font-size:15px;margin:0 2px 0 0}
+      #scoreDialog:has(.sc-list.is-many) .sc-help{display:none}
+      #scoreDialog:has(.sc-list.is-many) .sc-done{margin-top:10px}
+    }
+    .sc-done{position:sticky;bottom:0;box-shadow:0 -10px 18px #1c2134}
     /* ===== Landscape (tabletă / telefon întors): două coloane ===== */
     @media (orientation: landscape) and (min-width: 700px){
       main{width:min(100%,1280px);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;column-gap:clamp(20px,calc(var(--uvw) * 4),56px);align-content:stretch;padding:max(16px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
@@ -1421,7 +1452,7 @@
         if (index === bumpedPlayerIndex) { vp.classList.add('is-bumped'); bumpedPlayerIndex = -1; }
         playerElement.append(vp);
         const badges = (catanScore.road === index ? '🛣️' : '') + (catanScore.army === index ? '⚔️' : '');
-        if (badges) { const b = document.createElement('span'); b.className = 'vp-badges'; b.textContent = badges; playerElement.append(b); }
+        if (badges) vp.textContent += ` ${badges}`;
         playerElement.setAttribute('role', 'button');
         playerElement.setAttribute('aria-label', `${playerNames[index]}: ${catanTotal(index)} puncte. Atinge pentru scor.`);
       }
