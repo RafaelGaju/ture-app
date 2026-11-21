@@ -164,7 +164,9 @@
     .robber-steps .step-text{min-width:0}
     @media(max-width:430px){.robber-panel{padding:14px 10px}.robber-steps li{padding:9px 8px;gap:7px}}
     .robber-steps b{color:#fff}
-    .robber-ok{display:block;width:100%;margin-top:12px;border:0;border-radius:12px;padding:13px;background:#ff7287;color:#2a0d16;font-weight:900;font-size:16px}
+    .robber-ok{position:relative;overflow:hidden;display:block;width:100%;margin-top:12px;border:0;border-radius:12px;padding:13px;background:#ff7287;color:#2a0d16;font-weight:900;font-size:16px}
+    .robber-ok::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:100%;background:#2a0d16;opacity:.45;transform-origin:left;animation:robber-countdown 30s linear forwards}
+    @keyframes robber-countdown{from{transform:scaleX(1)}to{transform:scaleX(0)}}
     @keyframes robber-in{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:none}}
     .dice-overlay.is-robber{background:radial-gradient(ellipse at 50% 40%,#3b1426f7,#0b0510fc)}
     .dice-strip.is-robber{border-color:#ff6a7d;background:#3a1624}
@@ -1097,6 +1099,7 @@
       let lastDiceRoll = loadLastDiceRoll();
       let diceSpinCounter = 0;
       let diceAutoCloseTimeoutId = 0;
+      let robberCountdownIntervalId = 0;
       let diceRevealTimeoutId = 0;
 
       function loadDiceSettings() {
@@ -1310,6 +1313,7 @@
       }
       function closeDiceOverlay() {
         window.clearTimeout(diceAutoCloseTimeoutId);
+        window.clearInterval(robberCountdownIntervalId);
         window.clearTimeout(diceRevealTimeoutId);
         diceOverlayElement.classList.remove('is-open');
         diceOverlayElement.setAttribute('aria-hidden', 'true');
@@ -1456,7 +1460,7 @@
         const ok = document.createElement('button');
         ok.type = 'button';
         ok.className = 'robber-ok';
-        ok.textContent = 'Am înțeles';
+        ok.textContent = 'Am înțeles · 30';
         robberPanelElement.append(title, sub, steps, ok);
         robberPanelElement.classList.add('is-shown');
         // Fiecare pas pe un singur rând: micșorează textul doar cât e nevoie.
@@ -1467,6 +1471,15 @@
         });
         diceOverlayElement.classList.add('is-robber');
         playRobberSound();
+        // Se închide singur după 30 s (ca și cum s-ar apăsa „Am înțeles”); tura NU trece mai departe.
+        const robberClosesAt = Date.now() + 30000;
+        window.clearInterval(robberCountdownIntervalId);
+        robberCountdownIntervalId = window.setInterval(() => {
+          const secondsLeft = Math.max(0, Math.ceil((robberClosesAt - Date.now()) / 1000));
+          ok.textContent = `Am înțeles · ${secondsLeft}`;
+        }, 250);
+        window.clearTimeout(diceAutoCloseTimeoutId);
+        diceAutoCloseTimeoutId = window.setTimeout(closeDiceOverlay, 30000);
         if (typeof navigator.vibrate === 'function') navigator.vibrate([220, 90, 220, 90, 450]);
       }
       gameCatanCheckboxElement.addEventListener('change', () => {
