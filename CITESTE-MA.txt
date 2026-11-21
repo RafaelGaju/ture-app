@@ -1,0 +1,37 @@
+TURE — APLICAȚIE INSTALABILĂ PENTRU ANDROID (PWA)
+===================================================
+
+Actualizarea v2:
+- La 15 secunde rămase: semnal discret, original, cu 3 note scurte (~0,8 s), o singură dată.
+- La 00:00: alarma puternică de ~3 secunde, păstrată.
+- Volumul iconiței activează/dezactivează ambele semnale.
+- Nu schimbă automat tura când expiră timpul.
+- Pentru a actualiza aplicația PWA deja instalată, publică noile fișiere pe
+  ACEEAȘI adresă HTTPS, apoi redeschide sau reîncarcă aplicația.
+
+Ce conține arhiva:
+- index.html: aplicația completă, fără dependențe externe
+- manifest.webmanifest: nume, culori și iconițe pentru instalare
+- sw.js: păstrează aplicația offline după prima deschidere online
+- icons/: iconițele necesare instalării
+
+INSTALARE PE TELEFON
+1. Publică TOATE fișierele din arhivă la un loc, pe un site HTTPS.
+   Cea mai simplă variantă: https://app.netlify.com/drop
+   Încarcă proiectul; dacă încărcarea arhivei ZIP nu este acceptată, dezarhivează
+   și încarcă dosarul Ture_App_PWA (cu index.html în rădăcină).
+2. Deschide adresa HTTPS generată în Google Chrome pe Android.
+3. Din meniul ⋮, alege «Instalează aplicația» (sau «Adaugă pe ecranul de pornire»).
+4. Pornește «Ture» din pictograma de pe ecranul principal.
+5. După prima încărcare completă și activarea serviciului offline,
+   aplicația funcționează și fără internet.
+
+IMPORTANT
+- Un fișier HTML deschis direct ca file:// NU poate fi instalat drept PWA.
+- PWA este o aplicație web instalabilă, NU un fișier Android APK.
+- Salvările sunt locale, în browser. Dacă treci de la fișier la adresa HTTPS,
+  numele și progresul vechi nu sunt transferate automat.
+- Sunetul este limitat de volumul telefonului și regulile browserului;
+  nu te baza pe alarmă dacă aplicația este în fundal sau ecranul e stins.
+- Pentru folosirea directă fără publicare, deschide Ture_App.html,
+  dar în acest mod nu este o aplicație instalabilă.

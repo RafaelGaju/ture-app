@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#101423" />
+  <meta name="color-scheme" content="dark" />
+  <title>Ture — Cronometru pentru jocuri</title>
+  <meta name="description" content="Gestionează turele pentru 1–6 jucători, cu cronometru, alarme și funcționare offline." />
+  <meta name="application-name" content="Ture" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Ture" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+  <style>
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f6f7ff;background:#101423;-webkit-tap-highlight-color:transparent}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100svh;background:radial-gradient(ellipse 85% 50% at 50% -10%,#303764 0%,transparent 70%),#101423}
+    main{width:min(100%,480px);min-height:100svh;margin:auto;padding:max(24px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:0}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .eyebrow{font-size:12px;font-weight:800;letter-spacing:.20em;color:#a9b1cc;text-transform:uppercase}
+    .round{font-size:13px;font-weight:700;color:#c8cce0;padding:9px 12px;border:1px solid #353b55;border-radius:999px;background:#20253a;white-space:nowrap}
+    .header-actions{display:flex;align-items:center;gap:8px}
+    .fullscreen-toggle{width:43px;height:43px;border:1px solid #353b55;border-radius:13px;background:#20253a;color:#dce1f4;display:grid;place-items:center;padding:0;flex-shrink:0}
+    .fullscreen-toggle svg{width:23px;height:23px}
+    .settings-toggle{width:43px;height:43px;border:1px solid #353b55;border-radius:13px;background:#20253a;color:#dce1f4;display:grid;place-items:center;padding:0;flex-shrink:0}
+    .settings-toggle svg{width:23px;height:23px}
+    .settings-toggle:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    .sound-toggle{width:43px;height:43px;border:1px solid #353b55;border-radius:13px;background:#20253a;color:#dce1f4;display:grid;place-items:center;padding:0;flex-shrink:0}
+    .sound-toggle svg{width:22px;height:22px}
+    .sound-toggle.is-muted{color:#8a94b0}
+    .sound-toggle:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    @media(max-width:410px){.eyebrow{font-size:10px;letter-spacing:.10em}.header-actions{gap:5px}.round{font-size:12px;padding:8px}.fullscreen-toggle,.sound-toggle,.settings-toggle{width:38px;height:38px}}
+    @media(max-width:365px){.eyebrow{display:none}.header-actions{margin-left:auto}.round{font-size:12px;padding:8px}}
+    .fullscreen-toggle:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    .fullscreen-feedback{position:fixed;z-index:5;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100vw - 32px);border:1px solid #545d7a;border-radius:14px;background:#252d47;color:#fff;padding:12px 16px;text-align:center;font-size:14px;box-shadow:0 12px 30px #0008}
+    :fullscreen{background:#101423}
+    :fullscreen main{min-height:100dvh}
+    .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 12px;min-height:272px}
+    .subtitle{color:#b5bfd9;font-size:15px;font-weight:600;margin:0 0 3px}
+    .timer-frame{position:relative;display:grid;place-items:center;width:min(76vw,clamp(200px,32svh,278px));aspect-ratio:1;isolation:isolate;--progress-color:#a9a0ff}
+    .timer-ring{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transform:rotate(-90deg);pointer-events:none}
+    .ring-track{fill:none;stroke:#343b56;stroke-width:9}
+    .progress-ring{fill:none;stroke:var(--progress-color);stroke-width:10;stroke-linecap:round;stroke-dasharray:772.83179;stroke-dashoffset:0;filter:drop-shadow(0 0 5px #a9a0ff66);transition:stroke .3s,filter .3s}
+    .timer-content{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transform:translateY(-7px);max-width:88%;z-index:1}
+    .name{font-weight:900;letter-spacing:-.055em;font-size:clamp(50px,14vw,78px);line-height:1.10;margin:0;text-align:center;overflow-wrap:anywhere;max-width:100%;transition:color .18s}
+    .name{color:var(--player-color,#c5a9ff)}
+    .name.is-long{font-size:clamp(31px,9vw,51px)}
+    .name.is-very-long{font-size:clamp(24px,7vw,37px)}
+    .timer-readout{font-size:clamp(25px,6vw,31px);font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:.055em;color:#d8def4;transition:color .25s}
+    .timer-unlimited{display:none;font-size:16px;font-weight:750;color:#c0cae4;letter-spacing:.01em;text-align:center}
+    .timer-frame.is-untimed .timer-ring,.timer-frame.is-untimed .timer-readout,.timer-frame.is-untimed .timer-warning{display:none}
+    .timer-frame.is-untimed .timer-unlimited{display:block}
+    .timer-frame.is-untimed::before{content:"";position:absolute;inset:12px;border:2px solid #434c72;border-radius:50%;box-shadow:inset 0 0 45px #9c90ff08,0 0 24px #9c90ff08}
+    .timer-warning{position:absolute;bottom:14%;left:0;right:0;min-height:20px;text-align:center;color:#ff9bac;font-size:clamp(10px,2.8vw,12px);font-weight:750;letter-spacing:.01em;opacity:0;transform:translateY(5px);transition:opacity .2s,transform .2s;pointer-events:none}
+    .timer-frame.is-warning{--progress-color:#ff7287}
+    .timer-frame.is-warning .progress-ring{filter:drop-shadow(0 0 7px #ff72877a)}
+    .timer-frame.is-warning .timer-readout{color:#ff9bac}
+    .timer-frame.is-warning .timer-warning,.timer-frame.is-expired .timer-warning{opacity:1;transform:translateY(0)}
+    .timer-frame.is-expired{--progress-color:#ff6a7d}
+    .timer-frame.is-expired .ring-track{stroke:#ff6a7d;animation:expired-ring-pulse 1.35s ease-in-out infinite}
+    .timer-frame.is-expired .timer-readout{color:#ff8494}
+    .timer-frame.is-expired .timer-warning{color:#ff8494}
+    @keyframes expired-ring-pulse{0%,100%{opacity:1;filter:drop-shadow(0 0 2px #ff6a7d66)}50%{opacity:.4;filter:drop-shadow(0 0 10px #ff6a7dbb)}}
+    @media(prefers-reduced-motion:reduce){.timer-frame.is-expired .ring-track{animation:none}}
+    .hint{margin-top:4px;color:#959fb8;font-size:14px;text-align:center}
+    .players{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 24px}
+    .player{background:#1b2135;border:1px solid #333a56;border-radius:17px;padding:13px 5px;min-height:93px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;opacity:.65;transition:background .18s,border-color .18s,opacity .18s,transform .18s}
+    .player.active{opacity:1;background:#2a3049;border-color:#8c92fa;transform:translateY(-3px);box-shadow:0 8px 22px #080b1b44}
+    .circle{height:29px;width:29px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;color:#101423}
+    .circle{background:var(--player-color,#c5a9ff)}
+    .players.has-many{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .players.has-many .player{min-height:72px;padding:7px 4px;gap:5px;border-radius:14px}
+    .players.has-many .circle{width:26px;height:26px}
+    .player span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .player span:last-child{font-size:13px;font-weight:750}
+    button{font:inherit;cursor:pointer;touch-action:manipulation}
+    .end{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;border:0;border-radius:25px;min-height:clamp(180px,26svh,235px);padding:30px 18px;background:linear-gradient(105deg,#8f89ff,#b18eff);box-shadow:0 13px 34px #7166f93e;color:#11152c;font-size:clamp(30px,8vw,38px);font-weight:900;letter-spacing:-.03em;transition:transform .10s,filter .10s}
+    .end:active{transform:scale(.98);filter:brightness(1.07)}
+    .end svg{width:40px;height:40px;flex-shrink:0}
+    .actions{display:flex;justify-content:center;gap:22px;padding:23px 0 4px}
+    .small{border:0;background:transparent;color:#adb6d2;padding:10px;font-size:14px;font-weight:650;border-radius:10px}
+    .small:focus-visible,.end:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    .small:disabled{opacity:.32;cursor:not-allowed}
+    dialog{border:1px solid #424862;color:#f6f7ff;border-radius:20px;background:#23283d;padding:24px;width:min(calc(100% - 40px),350px);box-shadow:0 25px 80px #0009}
+    dialog::backdrop{background:#050713b3}
+    dialog h2{margin:0 0 10px;font-size:21px}dialog p{color:#b9c1d9;line-height:1.5}
+    .dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+    .settings-dialog{width:min(calc(100% - 28px),410px);max-height:min(85dvh,720px);overflow-y:auto;padding:22px}
+    .settings-dialog h2{margin-bottom:5px}
+    .settings-description{font-size:13px;margin:0 0 17px;color:#b9c1d9}
+    .settings-field-label{display:block;margin:15px 0 7px;font-size:14px;font-weight:750;color:#dbe1f8}
+    .settings-select,.settings-name-input{width:100%;background:#141a2c;border:1px solid #49516f;color:#f6f7ff;border-radius:12px;padding:12px;font:inherit;font-size:16px;outline:none}
+    .settings-select:focus,.settings-name-input:focus{border-color:#b49bff;box-shadow:0 0 0 2px #b49bff40}
+    .settings-name-list{display:grid;grid-template-columns:1fr 1fr;column-gap:10px;row-gap:4px}
+    .settings-name-list label{min-width:0}
+    .settings-name-list .settings-field-label{font-size:12px;margin:9px 0 5px}
+    .settings-name-input{padding:10px;font-size:15px}
+    .settings-divider{height:1px;background:#444b66;margin:19px 0 13px}
+    .settings-timer-row{display:flex;align-items:center;gap:12px}
+    .settings-timer-row .settings-select{flex:1;min-width:0}
+    .settings-timer-unit{font-size:14px;font-weight:650;color:#aeb9d3}
+    .settings-no-timer{display:flex;align-items:center;gap:11px;margin:15px 0 7px;min-height:44px;font-size:15px;font-weight:700;color:#eceeff;cursor:pointer}
+    .settings-no-timer input{width:22px;height:22px;accent-color:#aa9bff;margin:0}
+    .settings-select:disabled{opacity:.4;cursor:not-allowed}
+    .settings-note{font-size:12px;line-height:1.5;color:#b9c1d9;margin:8px 0 0}
+    .settings-error{min-height:18px;margin-top:8px;font-size:13px;color:#ff9bac}
+    .settings-dialog .dialog-actions{position:sticky;bottom:-22px;z-index:1;padding:13px 0 1px;background:#23283d;margin-top:5px}
+    @media(max-width:350px){.settings-name-list{grid-template-columns:1fr}}
+    .dialog-actions button{border:0;border-radius:11px;padding:12px 16px;font-weight:700}
+    .cancel{background:#373e58;color:white}.confirm{background:#ad9bff;color:#11152c}
+    @media(max-height:680px){.players{margin-bottom:12px}.player{min-height:75px;padding:8px 4px;gap:5px}.center{min-height:215px;padding:2px 0}.end{min-height:clamp(150px,25svh,200px)}.actions{padding:10px 0 0}}
+    @media(max-height:560px){.center{min-height:185px}.timer-frame{width:min(54vw,160px)}.name{font-size:42px}.timer-readout{font-size:22px}.timer-warning{font-size:9px;bottom:11%}.subtitle,.hint{font-size:12px}.players{margin-bottom:10px}.player{min-height:64px}.end{min-height:125px;padding:16px}.actions{padding-top:4px}}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">TURA CURENTĂ</div>
+      <div class="header-actions">
+        <div class="round" id="roundText">Runda 1</div>
+        <button type="button" class="sound-toggle" id="soundToggle" aria-label="Oprește sunetul" aria-pressed="true" title="Sunet pornit (atinge ecranul o dată pentru activarea audio)">
+          <svg id="soundIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 5a10 10 0 0 1 0 14"/></svg>
+        </button>
+        <button type="button" class="settings-toggle" id="settingsToggle" aria-label="Setări jucători" title="Setări jucători">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06-1.95 1.95-.06-.06A1.6 1.6 0 0 0 16 18.4l-.12.05a1.6 1.6 0 0 0-1 1.48V20H9.12v-.07a1.6 1.6 0 0 0-1-1.48L8 18.4a1.6 1.6 0 0 0-1.77.32l-.06.06-1.95-1.95.06-.06A1.6 1.6 0 0 0 4.6 15l-.05-.12a1.6 1.6 0 0 0-1.48-1H3v-3.76h.07a1.6 1.6 0 0 0 1.48-1L4.6 9a1.6 1.6 0 0 0-.32-1.77l-.06-.06 1.95-1.95.06.06A1.6 1.6 0 0 0 8 5.6l.12-.05a1.6 1.6 0 0 0 1-1.48V4h5.76v.07a1.6 1.6 0 0 0 1 1.48L16 5.6a1.6 1.6 0 0 0 1.77-.32l.06-.06 1.95 1.95-.06.06A1.6 1.6 0 0 0 19.4 9l.05.12a1.6 1.6 0 0 0 1.48 1H21v3.76h-.07a1.6 1.6 0 0 0-1.48 1L19.4 15Z"/></svg>
+        </button>
+        <button type="button" class="fullscreen-toggle" id="fullscreenToggle" aria-label="Activează ecranul complet" title="Ecran complet">
+          <svg id="fullscreenIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" /></svg>
+        </button>
+      </div>
+    </header>
+    <section class="center" aria-label="Tura și cronometrul">
+      <p class="subtitle">Acum joacă</p>
+      <div class="timer-frame" id="timerFrame" role="timer" aria-label="Timp rămas: 45 de secunde">
+        <svg class="timer-ring" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
+          <circle class="ring-track" cx="140" cy="140" r="123" />
+          <circle class="progress-ring" id="progressRing" cx="140" cy="140" r="123" />
+        </svg>
+        <div class="timer-content">
+          <h1 class="name miha" id="activeName">Miha</h1>
+          <div class="timer-readout" id="timerReadout">00:45</div>
+          <div class="timer-unlimited" id="timerUnlimited">Fără limită de timp</div>
+        </div>
+        <div class="timer-warning" id="timerWarning" aria-hidden="true"></div>
+      </div>
+      <div class="hint" id="nextText" aria-live="polite">Urmează Adi</div>
+      <span id="timerAnnouncement" role="status" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"></span>
+    </section>
+    <div class="players" id="players" aria-label="Jucători"></div>
+    <button class="end" id="endTurn" type="button">Încheie tura <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
+    <div class="actions">
+      <button type="button" id="undo" class="small">↶ Înapoi</button>
+      <button type="button" id="reset" class="small">↻ Resetează rundele</button>
+    </div>
+  </main>
+  <div class="fullscreen-feedback" id="fullscreenFeedback" role="status" hidden></div>
+  <dialog id="resetDialog" aria-labelledby="resetTitle">
+    <h2 id="resetTitle">Resetezi turele?</h2>
+    <p id="resetDescription">Se revine la Miha, runda 1. Cronometrul nu se resetează.</p>
+    <div class="dialog-actions">
+      <button class="cancel" id="cancelReset" type="button">Anulează</button>
+      <button class="confirm" id="confirmReset" type="button">Resetează rundele</button>
+    </div>
+  </dialog>
+  <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
+    <form id="playerSettingsForm" autocomplete="off">
+      <h2 id="settingsTitle">⚙️ Setări</h2>
+      <p class="settings-description">Alege câți jucați și în ce ordine. Maximum 6 jucători.</p>
+      <label class="settings-field-label" for="playerCount">Număr de jucători</label>
+      <select class="settings-select" id="playerCount" name="playerCount">
+        <option value="1">1 jucător</option><option value="2">2 jucători</option>
+        <option value="3">3 jucători</option><option value="4">4 jucători</option>
+        <option value="5">5 jucători</option><option value="6">6 jucători</option>
+      </select>
+      <div class="settings-name-list" id="playerNameFields"></div>
+      <div class="settings-divider"></div>
+      <label class="settings-field-label" for="timerDurationSeconds">Durata unei ture</label>
+      <div class="settings-timer-row">
+        <input class="settings-select" id="timerDurationSeconds" name="timerDurationSeconds" type="number" inputmode="numeric" min="1" max="3600" step="1" value="45" required />
+        <span class="settings-timer-unit">secunde</span>
+      </div>
+      <label class="settings-no-timer" for="timerDisabled">
+        <input id="timerDisabled" name="timerDisabled" type="checkbox" />
+        Fără cronometru
+      </label>
+      <p class="settings-note">Implicit: 45 secunde. Poți alege între 1 secundă și 60 de minute. Alarma se activează doar când expiră un cronometru.</p>
+      <p class="settings-error" id="settingsError" role="alert"></p>
+      <p class="settings-note">Setările cronometrului se aplică imediat, dar timpul scurs din tura curentă nu se reia de la zero. Doar „Încheie tura” pornește o tură nouă.</p>
+      <div class="dialog-actions">
+        <button class="cancel" id="cancelSettings" type="button">Anulează</button>
+        <button class="confirm" type="submit">Salvează</button>
+      </div>
+    </form>
+  </dialog>
+  <script>
+    (() => {
+      'use strict';
+      const playerColorPalette = ['#c5a9ff','#ffbc8e','#82e6ce','#8dbaff','#ffe397','#ff99c9'];
+      const playerSettingsStorageKey = 'end-turn-configurable-players-v1';
+      let playerNames = loadSavedPlayerNames();
+      let editedPlayerNames = [];
+      const storageKey = 'end-turn-miha-adi-rafa-v1';
+      const timerStorageKey = 'end-turn-miha-adi-rafa-timer-45sec-v1'; // Compatibilitate cu versiunile vechi.
+      const timerStartStorageKey = 'end-turn-current-turn-start-v1';
+      const configurableTimerStorageKey = 'end-turn-duration-seconds-or-off-v1';
+      const soundEnabledStorageKey = 'end-turn-miha-adi-rafa-expiration-sound-enabled-v1';
+      const defaultTimerDurationSeconds = 45;
+      let configuredTimerDurationSeconds = loadSavedTimerDurationPreference();
+      const warningThresholdMilliseconds = 15000;
+      const ringCircumference = 2 * Math.PI * 123;
+      const timerFrameElement = document.getElementById('timerFrame');
+      const progressRingElement = document.getElementById('progressRing');
+      const timerReadoutElement = document.getElementById('timerReadout');
+      const timerWarningElement = document.getElementById('timerWarning');
+      const timerAnnouncementElement = document.getElementById('timerAnnouncement');
+      const activeNameElement = document.getElementById('activeName');
+      const roundTextElement = document.getElementById('roundText');
+      const nextTextElement = document.getElementById('nextText');
+      const playersContainerElement = document.getElementById('players');
+      const settingsToggleButton = document.getElementById('settingsToggle');
+      const settingsDialog = document.getElementById('settingsDialog');
+      const playerSettingsForm = document.getElementById('playerSettingsForm');
+      const playerCountSelectElement = document.getElementById('playerCount');
+      const playerNameFieldsElement = document.getElementById('playerNameFields');
+      const settingsErrorElement = document.getElementById('settingsError');
+      const timerDurationInputElement = document.getElementById('timerDurationSeconds');
+      const timerDisabledCheckboxElement = document.getElementById('timerDisabled');
+      const resetDescriptionElement = document.getElementById('resetDescription');
+      const undoButton = document.getElementById('undo');
+      const resetDialog = document.getElementById('resetDialog');
+      const soundToggleButton = document.getElementById('soundToggle');
+      const soundIconElement = document.getElementById('soundIcon');
+      const fullscreenToggleButton = document.getElementById('fullscreenToggle');
+      const fullscreenIconElement = document.getElementById('fullscreenIcon');
+      const fullscreenFeedbackElement = document.getElementById('fullscreenFeedback');
+      let completedTurns = 0;
+      let currentTurnTimerStartedAtMilliseconds = 0;
+      let currentTurnTimerDeadlineMilliseconds = 0;
+      let previousRemainingMilliseconds = null;
+      let mostRecentlyRenderedSeconds = null;
+      let announcedWarningDeadlineMilliseconds = null;
+      let announcedExpirationDeadlineMilliseconds = null;
+      let expirationSoundAudioContext = null;
+      let currentlyPlayingExpirationSoundOscillators = [];
+      let expirationSoundEnabled = loadSavedExpirationSoundPreference();
+
+      function loadSavedExpirationSoundPreference() {
+        try { return localStorage.getItem(soundEnabledStorageKey) !== 'off'; }
+        catch (_) { return true; }
+      }
+      function saveExpirationSoundPreference() {
+        try { localStorage.setItem(soundEnabledStorageKey, expirationSoundEnabled ? 'on' : 'off'); }
+        catch (_) { /* Sunetul funcționează și dacă nu se poate salva preferința. */ }
+      }
+      function updateSoundToggleAppearance() {
+        soundToggleButton.classList.toggle('is-muted', !expirationSoundEnabled);
+        soundToggleButton.setAttribute('aria-pressed', String(expirationSoundEnabled));
+        soundToggleButton.setAttribute('aria-label', expirationSoundEnabled ? 'Oprește sunetul' : 'Pornește sunetul');
+        soundToggleButton.title = expirationSoundEnabled ? 'Sunet pornit' : 'Sunet oprit';
+        soundIconElement.innerHTML = expirationSoundEnabled
+          ? '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 5a10 10 0 0 1 0 14"/>'
+          : '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 6m0-6-5 6"/>';
+      }
+      function activateExpirationSoundAfterUserInteraction() {
+        if (!expirationSoundEnabled) return;
+        const WebAudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!WebAudioContext) return;
+        try {
+          if (!expirationSoundAudioContext) expirationSoundAudioContext = new WebAudioContext();
+          if (expirationSoundAudioContext.state === 'suspended') {
+            expirationSoundAudioContext.resume().catch(() => {});
+          }
+        } catch (_) { /* Browserul poate dezactiva ieșirea audio. */ }
+      }
+      function stopPlayingExpirationSoundImmediately() {
+        currentlyPlayingExpirationSoundOscillators.forEach(oscillator => {
+          try { oscillator.stop(); } catch (_) { /* Poate să se fi oprit deja. */ }
+        });
+        currentlyPlayingExpirationSoundOscillators = [];
+      }
+      function playGentleThreeNoteWarningWhenFifteenSecondsRemain() {
+        if (!expirationSoundEnabled || document.visibilityState !== 'visible') return;
+        // Evită redarea cu întârziere dacă aplicația a fost suspendată ori era în fundal.
+        const warningStartsAtMilliseconds = currentTurnTimerDeadlineMilliseconds - warningThresholdMilliseconds;
+        const millisecondsSinceWarningStarted = Date.now() - warningStartsAtMilliseconds;
+        if (millisecondsSinceWarningStarted < 0 || millisecondsSinceWarningStarted > 1250) return;
+        const audioContext = expirationSoundAudioContext;
+        if (!audioContext || audioContext.state !== 'running') return;
+        stopPlayingExpirationSoundImmediately();
+
+        // Semnalul original, discret, din prima versiune cu sunet: 3 note sinusoidale,
+        // cca. 0,8 secunde, amplitudine maximă 0,20 (alarma de la zero rămâne separată).
+        const shortNotes = [
+          { delay: 0.00, frequency: 784, duration: 0.16 },
+          { delay: 0.24, frequency: 784, duration: 0.16 },
+          { delay: 0.48, frequency: 587, duration: 0.32 }
+        ];
+        const soundStartTime = audioContext.currentTime + 0.015;
+        for (const note of shortNotes) {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          const noteStartTime = soundStartTime + note.delay;
+          const noteEndTime = noteStartTime + note.duration;
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(note.frequency, noteStartTime);
+          gain.gain.setValueAtTime(0.0001, noteStartTime);
+          gain.gain.exponentialRampToValueAtTime(0.20, noteStartTime + 0.018);
+          gain.gain.exponentialRampToValueAtTime(0.0001, noteEndTime);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(noteStartTime);
+          oscillator.stop(noteEndTime + 0.018);
+          currentlyPlayingExpirationSoundOscillators.push(oscillator);
+          oscillator.onended = () => {
+            oscillator.disconnect();
+            gain.disconnect();
+            currentlyPlayingExpirationSoundOscillators = currentlyPlayingExpirationSoundOscillators.filter(item => item !== oscillator);
+          };
+        }
+      }
+      function playLoudThreeSecondAlarmOnceWhenTurnTimerExpires() {
+        if (!expirationSoundEnabled || document.visibilityState !== 'visible') return;
+        // Nu porni o alarmă întârziată după revenirea la o filă suspendată.
+        if (Date.now() - currentTurnTimerDeadlineMilliseconds > 1250) return;
+        const audioContext = expirationSoundAudioContext;
+        if (!audioContext || audioContext.state !== 'running') return;
+        stopPlayingExpirationSoundImmediately();
+
+        // Alarmă pătrunzătoare, în 9 impulsuri timp de aproximativ 3 secunde.
+        // Unda pătrată și frecvențele medii-înalte se aud mai bine pe difuzoarele telefoanelor.
+        // Nu putem depăși volumul fizic / software stabilit de telefon.
+        const alarmPulseCount = 9;
+        const alarmPulseIntervalSeconds = 0.34;
+        const alarmPulseDurationSeconds = 0.26;
+        const alarmStartTime = audioContext.currentTime + 0.015;
+
+        for (let pulseIndex = 0; pulseIndex < alarmPulseCount; pulseIndex++) {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          const pulseStartTime = alarmStartTime + pulseIndex * alarmPulseIntervalSeconds;
+          const pulseEndTime = pulseStartTime + alarmPulseDurationSeconds;
+          oscillator.type = 'square';
+          oscillator.frequency.setValueAtTime(pulseIndex % 2 === 0 ? 880 : 1100, pulseStartTime);
+          // Atac și stingere scurtă pentru a evita pocniturile între impulsuri.
+          gain.gain.setValueAtTime(0.0001, pulseStartTime);
+          gain.gain.linearRampToValueAtTime(0.62, pulseStartTime + 0.015);
+          gain.gain.setValueAtTime(0.62, pulseEndTime - 0.025);
+          gain.gain.linearRampToValueAtTime(0.0001, pulseEndTime);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(pulseStartTime);
+          oscillator.stop(pulseEndTime + 0.015);
+          currentlyPlayingExpirationSoundOscillators.push(oscillator);
+          oscillator.onended = () => {
+            oscillator.disconnect();
+            gain.disconnect();
+            currentlyPlayingExpirationSoundOscillators = currentlyPlayingExpirationSoundOscillators.filter(item => item !== oscillator);
+          };
+        }
+      }
+
+      function loadSavedTimerDurationPreference() {
+        try {
+          const savedPreference = localStorage.getItem(configurableTimerStorageKey);
+          if (savedPreference === 'off') return null;
+          if (savedPreference !== null) {
+            const savedSeconds = Number(savedPreference);
+            if (Number.isSafeInteger(savedSeconds) && savedSeconds >= 1 && savedSeconds <= 3600) {
+              return savedSeconds;
+            }
+          }
+        } catch (_) { /* Setarea implicită rămâne funcțională. */ }
+        return defaultTimerDurationSeconds;
+      }
+      function saveConfiguredTimerDurationPreference() {
+        try {
+          localStorage.setItem(configurableTimerStorageKey,
+            configuredTimerDurationSeconds === null ? 'off' : String(configuredTimerDurationSeconds));
+        } catch (_) { /* Opțiunea funcționează și fără salvare persistentă. */ }
+      }
+      function updateTimerDurationInputAvailability() {
+        timerDurationInputElement.disabled = timerDisabledCheckboxElement.checked;
+        timerDurationInputElement.required = !timerDisabledCheckboxElement.checked;
+      }
+      function updateCurrentTurnTimerDeadlineUsingPreference() {
+        currentTurnTimerDeadlineMilliseconds = configuredTimerDurationSeconds === null
+          ? 0 : currentTurnTimerStartedAtMilliseconds + configuredTimerDurationSeconds * 1000;
+      }
+      function loadSavedPlayerNames() {
+        try {
+          const savedNames = JSON.parse(localStorage.getItem(playerSettingsStorageKey));
+          if (Array.isArray(savedNames) && savedNames.length >= 1 && savedNames.length <= 6 &&
+              savedNames.every(name => typeof name === 'string' && name.trim().length >= 1 && name.trim().length <= 24)) {
+            return savedNames.map(name => name.trim());
+          }
+        } catch (_) { /* Setările implicite rămân utilizabile fără localStorage. */ }
+        return ['Miha', 'Adi', 'Rafa'];
+      }
+      function saveConfiguredPlayerNames() {
+        try { localStorage.setItem(playerSettingsStorageKey, JSON.stringify(playerNames)); }
+        catch (_) { /* Numele funcționează în sesiunea curentă. */ }
+      }
+      function renderEditablePlayerNameInputs() {
+        const chosenCount = Number(playerCountSelectElement.value);
+        playerNameFieldsElement.replaceChildren();
+        for (let index = 0; index < chosenCount; index++) {
+          if (!editedPlayerNames[index]) editedPlayerNames[index] = `Jucător ${index + 1}`;
+          const label = document.createElement('label');
+          const labelText = document.createElement('span');
+          labelText.className = 'settings-field-label';
+          labelText.textContent = `Jucător ${index + 1}`;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'settings-name-input';
+          input.maxLength = 24;
+          input.required = true;
+          input.autocomplete = 'off';
+          input.value = editedPlayerNames[index];
+          input.addEventListener('input', () => {
+            editedPlayerNames[index] = input.value;
+            settingsErrorElement.textContent = '';
+          });
+          label.append(labelText, input);
+          playerNameFieldsElement.append(label);
+        }
+      }
+      function openPlayerSettingsWithoutChangingCurrentTimer() {
+        editedPlayerNames = [...playerNames];
+        playerCountSelectElement.value = String(playerNames.length);
+        settingsErrorElement.textContent = '';
+        renderEditablePlayerNameInputs();
+        timerDisabledCheckboxElement.checked = configuredTimerDurationSeconds === null;
+        timerDurationInputElement.value = String(configuredTimerDurationSeconds ?? defaultTimerDurationSeconds);
+        updateTimerDurationInputAvailability();
+        if (typeof settingsDialog.showModal === 'function') settingsDialog.showModal();
+        else settingsDialog.setAttribute('open', '');
+      }
+      function closePlayerSettingsWithoutSaving() {
+        if (typeof settingsDialog.close === 'function') settingsDialog.close();
+        else settingsDialog.removeAttribute('open');
+      }
+      function saveConfiguredPlayersFromSettingsForm(event) {
+        event.preventDefault();
+        const selectedPlayerCount = Number(playerCountSelectElement.value);
+        const submittedNames = editedPlayerNames.slice(0, selectedPlayerCount).map(name => name.trim());
+        if (submittedNames.length !== selectedPlayerCount || submittedNames.some(name => !name || name.length > 24)) {
+          settingsErrorElement.textContent = 'Fiecare jucător trebuie să aibă un nume de 1–24 caractere.';
+          return;
+        }
+        if (new Set(submittedNames.map(name => name.toLocaleLowerCase('ro-RO'))).size !== submittedNames.length) {
+          settingsErrorElement.textContent = 'Alege nume diferite pentru jucători.';
+          return;
+        }
+        let selectedTimerDurationSeconds = null;
+        if (!timerDisabledCheckboxElement.checked) {
+          // Folosește validare explicită: numărul trebuie să fie întreg, 1–3600.
+          const secondsText = timerDurationInputElement.value.trim();
+          const secondsNumber = Number(secondsText);
+          if (!/^\d+$/.test(secondsText) || !Number.isSafeInteger(secondsNumber) || secondsNumber < 1 || secondsNumber > 3600) {
+            settingsErrorElement.textContent = 'Alege între 1 și 3600 de secunde sau bifează „Fără cronometru”.';
+            return;
+          }
+          selectedTimerDurationSeconds = secondsNumber;
+        }
+        const configurationHasChanged = JSON.stringify(playerNames) !== JSON.stringify(submittedNames);
+        const timerPreferenceHasChanged = configuredTimerDurationSeconds !== selectedTimerDurationSeconds;
+        playerNames = submittedNames;
+        saveConfiguredPlayerNames();
+        if (configurationHasChanged) {
+          completedTurns = 0;
+          saveCompletedTurnCount();
+        }
+        // Nu reporni tura. Durata se aplică la momentul de început existent.
+        // Astfel scurgerea timpului nu este resetată când sunt modificate setările.
+        if (timerPreferenceHasChanged) {
+          configuredTimerDurationSeconds = selectedTimerDurationSeconds;
+          saveConfiguredTimerDurationPreference();
+          updateCurrentTurnTimerDeadlineUsingPreference();
+          previousRemainingMilliseconds = null;
+          mostRecentlyRenderedSeconds = null;
+          announcedWarningDeadlineMilliseconds = null;
+          announcedExpirationDeadlineMilliseconds = null;
+          timerAnnouncementElement.textContent = '';
+          if (configuredTimerDurationSeconds === null) stopPlayingExpirationSoundImmediately();
+          renderCircularTimerAtCurrentTime();
+        }
+        displayCurrentPlayerAndRound();
+        closePlayerSettingsWithoutSaving();
+      }
+      function loadSavedCompletedTurnCount() {
+        try {
+          const value = Number(localStorage.getItem(storageKey));
+          if (Number.isSafeInteger(value) && value >= 0) return value;
+        } catch (_) { /* File access may disable storage; the page remains usable. */ }
+        return 0;
+      }
+      function saveCompletedTurnCount() {
+        try { localStorage.setItem(storageKey, String(completedTurns)); } catch (_) { /* Still usable without persistence. */ }
+      }
+      function loadSavedTurnStartOrMigratePreviousTimer() {
+        try {
+          const savedStart = Number(localStorage.getItem(timerStartStorageKey));
+          if (Number.isFinite(savedStart) && savedStart > 0 && savedStart <= Date.now() + 60000) {
+            return savedStart;
+          }
+          // Migrează vechiul cronometru de 45 secunde fără pierderea timpului scurs.
+          const legacyDeadline = Number(localStorage.getItem(timerStorageKey));
+          if (Number.isFinite(legacyDeadline) && legacyDeadline > 0) {
+            return legacyDeadline - defaultTimerDurationSeconds * 1000;
+          }
+        } catch (_) { /* Fișierul poate rula fără localStorage. */ }
+        return Date.now();
+      }
+      function saveCurrentTurnTimerStart() {
+        try {
+          localStorage.setItem(timerStartStorageKey, String(currentTurnTimerStartedAtMilliseconds));
+          // Păstrează sincronizat și cheia veche pentru migrare înapoi la versiuni anterioare.
+          localStorage.setItem(timerStorageKey, String(currentTurnTimerStartedAtMilliseconds + 45000));
+        } catch (_) { /* Aplicația funcționează și fără acces la stocare. */ }
+      }
+      function startNewTimerOnlyAfterEndingTurn() {
+        stopPlayingExpirationSoundImmediately();
+        currentTurnTimerStartedAtMilliseconds = Date.now();
+        updateCurrentTurnTimerDeadlineUsingPreference();
+        previousRemainingMilliseconds = configuredTimerDurationSeconds === null ? null : configuredTimerDurationSeconds * 1000;
+        mostRecentlyRenderedSeconds = null;
+        announcedWarningDeadlineMilliseconds = null;
+        announcedExpirationDeadlineMilliseconds = null;
+        timerAnnouncementElement.textContent = '';
+        saveCurrentTurnTimerStart();
+        renderCircularTimerAtCurrentTime();
+      }
+      function renderCircularTimerAtCurrentTime() {
+        const timerIsDisabled = configuredTimerDurationSeconds === null;
+        timerFrameElement.classList.toggle('is-untimed', timerIsDisabled);
+        if (timerIsDisabled) {
+          timerFrameElement.classList.remove('is-warning', 'is-expired');
+          timerFrameElement.setAttribute('aria-label', 'Fără limită de timp');
+          timerWarningElement.textContent = '';
+          timerAnnouncementElement.textContent = '';
+          previousRemainingMilliseconds = null;
+          return;
+        }
+        const millisecondsRemaining = Math.max(0, currentTurnTimerDeadlineMilliseconds - Date.now());
+        const roundedSecondsRemaining = Math.ceil(millisecondsRemaining / 1000);
+        const timerDurationMilliseconds = configuredTimerDurationSeconds * 1000;
+        const remainingProportion = Math.min(1, millisecondsRemaining / timerDurationMilliseconds);
+        progressRingElement.style.strokeDashoffset = String(ringCircumference * (1 - remainingProportion));
+        if (roundedSecondsRemaining !== mostRecentlyRenderedSeconds) {
+          const twoDigitMinutes = String(Math.floor(roundedSecondsRemaining / 60)).padStart(2, '0');
+          const twoDigitSeconds = String(roundedSecondsRemaining % 60).padStart(2, '0');
+          timerReadoutElement.textContent = `${twoDigitMinutes}:${twoDigitSeconds}`;
+          timerFrameElement.setAttribute('aria-label', `Timp rămas: ${roundedSecondsRemaining} secunde`);
+          mostRecentlyRenderedSeconds = roundedSecondsRemaining;
+        }
+        const warningPeriodHasStarted = millisecondsRemaining > 0 && millisecondsRemaining <= warningThresholdMilliseconds;
+        const timeHasExpired = millisecondsRemaining === 0;
+        timerFrameElement.classList.toggle('is-warning', warningPeriodHasStarted);
+        timerFrameElement.classList.toggle('is-expired', timeHasExpired);
+        timerWarningElement.textContent = timeHasExpired ? 'Timpul a expirat' : warningPeriodHasStarted ? `Ultimele ${Math.min(15, configuredTimerDurationSeconds)} secunde!` : '';
+        if (warningPeriodHasStarted && previousRemainingMilliseconds !== null &&
+            previousRemainingMilliseconds > warningThresholdMilliseconds &&
+            announcedWarningDeadlineMilliseconds !== currentTurnTimerDeadlineMilliseconds) {
+          announcedWarningDeadlineMilliseconds = currentTurnTimerDeadlineMilliseconds;
+          timerAnnouncementElement.textContent = 'Atenție! Au rămas 15 secunde.';
+          playGentleThreeNoteWarningWhenFifteenSecondsRemain();
+          if (document.visibilityState === 'visible' && typeof navigator.vibrate === 'function') {
+            navigator.vibrate([110, 65, 110]);
+          }
+        }
+        if (timeHasExpired && previousRemainingMilliseconds !== null && previousRemainingMilliseconds > 0 &&
+            announcedExpirationDeadlineMilliseconds !== currentTurnTimerDeadlineMilliseconds) {
+          announcedExpirationDeadlineMilliseconds = currentTurnTimerDeadlineMilliseconds;
+          timerAnnouncementElement.textContent = 'Timpul a expirat. Tura rămâne la același jucător.';
+          playLoudThreeSecondAlarmOnceWhenTurnTimerExpires();
+        }
+        previousRemainingMilliseconds = millisecondsRemaining;
+      }
+      function keepCircularTimerSmoothlyUpdated() {
+        renderCircularTimerAtCurrentTime();
+        window.requestAnimationFrame(keepCircularTimerSmoothlyUpdated);
+      }
+      function displayCurrentPlayerAndRound() {
+        const currentPlayerIndex = completedTurns % playerNames.length;
+        const nextPlayerIndex = (currentPlayerIndex + 1) % playerNames.length;
+        const currentPlayerName = playerNames[currentPlayerIndex];
+        activeNameElement.textContent = currentPlayerName;
+        activeNameElement.className = 'name';
+        if (currentPlayerName.length > 15) activeNameElement.classList.add('is-very-long');
+        else if (currentPlayerName.length > 9) activeNameElement.classList.add('is-long');
+        activeNameElement.style.setProperty('--player-color', playerColorPalette[currentPlayerIndex]);
+        roundTextElement.textContent = `Runda ${Math.floor(completedTurns / playerNames.length) + 1}`;
+        nextTextElement.textContent = playerNames.length === 1
+          ? 'Un singur jucător' : `Urmează ${playerNames[nextPlayerIndex]}`;
+        resetDescriptionElement.textContent = `Se revine la ${playerNames[0]}, runda 1. Cronometrul nu se resetează.`;
+        document.title = `Ture — ${playerNames.join(' · ')}`;
+
+        playersContainerElement.classList.toggle('has-many', playerNames.length > 3);
+        playersContainerElement.replaceChildren();
+        playerNames.forEach((playerName, index) => {
+          const playerElement = document.createElement('div');
+          playerElement.className = 'player';
+          playerElement.classList.toggle('active', index === currentPlayerIndex);
+          playerElement.style.setProperty('--player-color', playerColorPalette[index]);
+          if (index === currentPlayerIndex) playerElement.setAttribute('aria-current', 'true');
+          const avatarElement = document.createElement('span');
+          avatarElement.className = 'circle';
+          avatarElement.textContent = playerName.charAt(0).toLocaleUpperCase('ro-RO');
+          const nameElement = document.createElement('span');
+          nameElement.textContent = playerName;
+          nameElement.title = playerName;
+          playerElement.append(avatarElement, nameElement);
+          playersContainerElement.append(playerElement);
+        });
+        undoButton.disabled = completedTurns === 0;
+      }
+      function updateCompletedTurnsAndRefresh(nextCompletedTurns) {
+        completedTurns = nextCompletedTurns;
+        saveCompletedTurnCount();
+        displayCurrentPlayerAndRound();
+      }
+      function playShortTurnChangeFeedback() {
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(35);
+      }
+      settingsToggleButton.addEventListener('click', openPlayerSettingsWithoutChangingCurrentTimer);
+      document.getElementById('cancelSettings').addEventListener('click', closePlayerSettingsWithoutSaving);
+      playerCountSelectElement.addEventListener('change', renderEditablePlayerNameInputs);
+      timerDisabledCheckboxElement.addEventListener('change', updateTimerDurationInputAvailability);
+      playerSettingsForm.addEventListener('submit', saveConfiguredPlayersFromSettingsForm);
+      document.getElementById('endTurn').addEventListener('click', () => {
+        updateCompletedTurnsAndRefresh(completedTurns + 1);
+        startNewTimerOnlyAfterEndingTurn();
+        playShortTurnChangeFeedback();
+      });
+      undoButton.addEventListener('click', () => {
+        if (completedTurns > 0) updateCompletedTurnsAndRefresh(completedTurns - 1);
+      });
+      document.getElementById('reset').addEventListener('click', () => {
+        if (typeof resetDialog.showModal === 'function') resetDialog.showModal();
+        else if (window.confirm(`Resetezi la ${playerNames[0]}, runda 1?`)) updateCompletedTurnsAndRefresh(0);
+      });
+      document.getElementById('cancelReset').addEventListener('click', () => resetDialog.close());
+      document.getElementById('confirmReset').addEventListener('click', () => {
+        updateCompletedTurnsAndRefresh(0);
+        resetDialog.close();
+      });
+      function updateFullscreenToggleAppearance() {
+        const fullscreenIsActive = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+        fullscreenToggleButton.setAttribute('aria-label', fullscreenIsActive ? 'Ieși din ecranul complet' : 'Activează ecranul complet');
+        fullscreenToggleButton.title = fullscreenIsActive ? 'Ieși din ecranul complet' : 'Ecran complet';
+        fullscreenIconElement.innerHTML = fullscreenIsActive
+          ? '<path d="M8 3v5H3m13-5v5h5M3 16h5v5m13-5h-5v5" />'
+          : '<path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" />';
+      }
+      function showFullscreenUnsupportedFeedback() {
+        fullscreenFeedbackElement.hidden = false;
+        fullscreenFeedbackElement.textContent = 'Ecranul complet nu este disponibil în acest browser. Deschide pagina în Chrome.';
+      }
+      async function toggleFullscreenForTurnTracker() {
+        fullscreenFeedbackElement.hidden = true;
+        try {
+          if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) await document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          } else if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+          } else {
+            showFullscreenUnsupportedFeedback();
+          }
+        } catch (_) {
+          showFullscreenUnsupportedFeedback();
+        }
+        updateFullscreenToggleAppearance();
+      }
+      // Pe telefoane, browserul permite sunetul după prima interacțiune cu pagina.
+      document.addEventListener('pointerdown', activateExpirationSoundAfterUserInteraction, { passive: true });
+      document.addEventListener('keydown', activateExpirationSoundAfterUserInteraction);
+      soundToggleButton.addEventListener('click', () => {
+        expirationSoundEnabled = !expirationSoundEnabled;
+        saveExpirationSoundPreference();
+        updateSoundToggleAppearance();
+        if (expirationSoundEnabled) activateExpirationSoundAfterUserInteraction();
+        else stopPlayingExpirationSoundImmediately();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && expirationSoundAudioContext && expirationSoundEnabled) {
+          expirationSoundAudioContext.resume().catch(() => {});
+        }
+      });
+      fullscreenToggleButton.addEventListener('click', toggleFullscreenForTurnTracker);
+      document.addEventListener('fullscreenchange', updateFullscreenToggleAppearance);
+      document.addEventListener('webkitfullscreenchange', updateFullscreenToggleAppearance);
+      completedTurns = loadSavedCompletedTurnCount();
+      currentTurnTimerStartedAtMilliseconds = loadSavedTurnStartOrMigratePreviousTimer();
+      updateCurrentTurnTimerDeadlineUsingPreference();
+      saveCurrentTurnTimerStart();
+      displayCurrentPlayerAndRound();
+      updateSoundToggleAppearance();
+      keepCircularTimerSmoothlyUpdated();
+    })();
+  </script>
+  <script>
+    // Service worker: păstrează aplicația disponibilă offline după prima vizită pe HTTPS.
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(error => {
+          console.warn('Aplicația rămâne utilizabilă online; activarea offline a eșuat:', error);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
