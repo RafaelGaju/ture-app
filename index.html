@@ -211,6 +211,41 @@
     .score-chips{grid-column:1/-1;display:flex;gap:6px}
     .score-chip{flex:1;border:1px solid #49516f;border-radius:10px;background:transparent;color:#aab3cf;padding:8px 4px;font-size:13px;font-weight:750}
     .score-chip[aria-pressed="true"]{border-color:#ffe397;background:#3b3620;color:#ffe397}
+    /* Fereastra de scor */
+    #scoreDialog{padding:16px 14px 14px;background:#1c2134}
+    .sc-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 4px 12px}
+    .sc-head h2{margin:0;font-size:22px}
+    .sc-goal{font-size:13px;color:#aab3cf;font-weight:700}
+    .sc-goal b{color:#ffe397}
+    .sc-list{display:grid;gap:10px}
+    @media(min-width:640px){.sc-list.is-many{grid-template-columns:1fr 1fr}#scoreDialog:has(.sc-list.is-many){width:min(calc(100% - 24px),760px)}}
+    .sc-card{position:relative;overflow:hidden;background:#252b42;border:1px solid #363d5a;border-radius:18px;padding:12px 12px 12px 16px}
+    .sc-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--player-color)}
+    .sc-card.is-turn{border-color:#8c92fa;box-shadow:0 0 0 1px #8c92fa55,0 8px 24px #080b1b55}
+    .sc-card.is-leader .sc-name::after{content:" 👑";font-size:15px}
+    .sc-top{display:flex;align-items:center;gap:10px}
+    .sc-avatar{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:15px;color:#101423;background:var(--player-color)}
+    .sc-who{flex:1;min-width:0}
+    .sc-name{font-size:17px;font-weight:850;color:#f6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sc-turn{font-size:11px;font-weight:800;color:#b9b4ff;text-transform:uppercase;letter-spacing:.08em}
+    .sc-total{font-variant-numeric:tabular-nums;font-weight:900;font-size:30px;line-height:1;color:#ffe397}
+    .sc-total small{font-size:14px;color:#8e98b5;font-weight:800}
+    .sc-bar{display:flex;gap:3px;margin:10px 0 12px}
+    .sc-seg{flex:1;height:8px;border-radius:4px;background:#363d5a;transition:background .2s}
+    .sc-seg.is-base{background:var(--player-color)}
+    .sc-seg.is-bonus{background:#ffe397}
+    .sc-controls{display:flex;align-items:stretch;gap:8px}
+    .sc-stepper{display:flex;align-items:center;background:#1a1f31;border-radius:14px;padding:3px;flex:0 0 auto}
+    .sc-stepper button{width:44px;height:44px;border:0;border-radius:11px;background:#363d5a;color:#fff;font-size:24px;font-weight:800;line-height:1}
+    .sc-stepper button:active{transform:scale(.93)}
+    .sc-base{min-width:52px;text-align:center;line-height:1.05}
+    .sc-base b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+    .sc-base span{font-size:10px;color:#8e98b5;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+    .sc-award{flex:1;min-width:0;border:1px solid #444c6b;border-radius:14px;background:transparent;color:#aab3cf;font-weight:800;font-size:13px;padding:4px 6px;line-height:1.15}
+    .sc-award b{display:block;font-size:18px;margin-bottom:1px}
+    .sc-award[aria-pressed="true"]{border-color:#ffe397;background:#3b3620;color:#ffe397}
+    .sc-help{margin:12px 4px 10px;font-size:12px;color:#8e98b5;text-align:center;line-height:1.5}
+    .sc-done{display:block;width:100%;border:0;border-radius:14px;padding:14px;background:#ad9bff;color:#11152c;font-weight:900;font-size:17px}
     .winner-overlay{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#3b3418f7,#0b0a05fc)}
     .winner-overlay.is-open{display:flex}
     .winner-trophy{font-size:90px;animation:trophy 1.2s ease-in-out infinite alternate}
@@ -354,12 +389,13 @@
     </div>
   </dialog>
   <dialog id="scoreDialog" class="stats-dialog" aria-labelledby="scoreTitle">
-    <h2 id="scoreTitle">⭐ Puncte de victorie</h2>
-    <p class="settings-description">Puncte de bază = așezări (1), orașe (2), cărți de punct. Drumul și armata adaugă câte 2. Se câștigă la 10.</p>
-    <div id="scoreRows"></div>
-    <div class="dialog-actions">
-      <button class="confirm" id="closeScore" type="button">Gata</button>
+    <div class="sc-head">
+      <h2 id="scoreTitle">⭐ Scor</h2>
+      <span class="sc-goal">primul la <b>10</b> câștigă</span>
     </div>
+    <div id="scoreRows" class="sc-list"></div>
+    <p class="sc-help">Așezare = 1 · Oraș = 2 · Carte de punct = 1 · 🛣️ și ⚔️ = +2 fiecare</p>
+    <button class="sc-done" id="closeScore" type="button">Gata</button>
   </dialog>
   <div class="winner-overlay" id="winnerOverlay" role="alertdialog" aria-labelledby="winnerName">
     <div class="winner-trophy">🏆</div>
@@ -1391,33 +1427,62 @@
       }
       function renderScoreRows() {
         scoreRowsElement.replaceChildren();
+        scoreRowsElement.classList.toggle('is-many', playerNames.length > 3);
+        const totals = playerNames.map((_, i) => catanTotal(i));
+        const best = Math.max(...totals);
+        const leaderCount = totals.filter(t => t === best).length;
+        const turnIndex = completedTurns % playerNames.length;
         playerNames.forEach((name, index) => {
-          const row = document.createElement('div');
-          row.className = 'score-row';
-          const info = document.createElement('div');
-          const nameEl = document.createElement('div'); nameEl.className = 'score-name'; nameEl.textContent = name;
-          nameEl.style.setProperty('--player-color', playerColorPalette[index]);
-          const totalEl = document.createElement('div'); totalEl.className = 'score-total';
-          totalEl.innerHTML = 'Total: ';
-          const totalValue = document.createElement('b'); totalValue.textContent = `${catanTotal(index)} / ${catanWinningPoints}`;
-          totalEl.append(totalValue);
-          info.append(nameEl, totalEl);
-          const controls = document.createElement('div'); controls.className = 'score-controls';
+          const total = totals[index];
+          const card = document.createElement('div');
+          card.className = 'sc-card';
+          card.style.setProperty('--player-color', playerColorPalette[index]);
+          if (index === turnIndex) card.classList.add('is-turn');
+          if (total === best && leaderCount === 1 && best > 2) card.classList.add('is-leader');
+          const top = document.createElement('div'); top.className = 'sc-top';
+          const avatar = document.createElement('span'); avatar.className = 'sc-avatar'; avatar.textContent = name.charAt(0).toLocaleUpperCase('ro-RO');
+          const who = document.createElement('div'); who.className = 'sc-who';
+          const nameEl = document.createElement('div'); nameEl.className = 'sc-name'; nameEl.textContent = name;
+          who.append(nameEl);
+          if (index === turnIndex) { const turn = document.createElement('div'); turn.className = 'sc-turn'; turn.textContent = 'la rând'; who.append(turn); }
+          const totalEl = document.createElement('div'); totalEl.className = 'sc-total';
+          totalEl.append(String(total));
+          const of = document.createElement('small'); of.textContent = ` /${catanWinningPoints}`; totalEl.append(of);
+          top.append(avatar, who, totalEl);
+          // Bară: puncte de bază în culoarea jucătorului, bonusuri aurii.
+          const bar = document.createElement('div'); bar.className = 'sc-bar';
+          bar.setAttribute('aria-hidden', 'true');
+          const bonus = total - catanScore.base[index];
+          const segments = Math.max(catanWinningPoints, total);
+          for (let i = 0; i < segments; i++) {
+            const seg = document.createElement('span');
+            seg.className = 'sc-seg' + (i < catanScore.base[index] ? ' is-base' : i < catanScore.base[index] + bonus ? ' is-bonus' : '');
+            bar.append(seg);
+          }
+          const controls = document.createElement('div'); controls.className = 'sc-controls';
+          const stepper = document.createElement('div'); stepper.className = 'sc-stepper';
           const minus = document.createElement('button'); minus.type = 'button'; minus.textContent = '−'; minus.setAttribute('aria-label', `Scade un punct pentru ${name}`);
-          const value = document.createElement('span'); value.className = 'score-value'; value.textContent = catanScore.base[index];
+          const base = document.createElement('div'); base.className = 'sc-base';
+          const baseValue = document.createElement('b'); baseValue.textContent = catanScore.base[index];
+          const baseLabel = document.createElement('span'); baseLabel.textContent = 'puncte';
+          base.append(baseValue, baseLabel);
           const plus = document.createElement('button'); plus.type = 'button'; plus.textContent = '+'; plus.setAttribute('aria-label', `Adaugă un punct pentru ${name}`);
           minus.addEventListener('click', () => changeCatanScore(() => { catanScore.base[index] = Math.max(0, catanScore.base[index] - 1); }));
           plus.addEventListener('click', () => changeCatanScore(() => { catanScore.base[index] = Math.min(20, catanScore.base[index] + 1); }));
-          controls.append(minus, value, plus);
-          const chips = document.createElement('div'); chips.className = 'score-chips';
-          [['road', '🛣️ Cel mai lung drum'], ['army', '⚔️ Cea mai mare armată']].forEach(([key, label]) => {
-            const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'score-chip'; chip.textContent = label;
-            chip.setAttribute('aria-pressed', String(catanScore[key] === index));
-            chip.addEventListener('click', () => changeCatanScore(() => { catanScore[key] = catanScore[key] === index ? -1 : index; }));
-            chips.append(chip);
+          stepper.append(minus, base, plus);
+          controls.append(stepper);
+          [['road', '🛣️', 'Drum'], ['army', '⚔️', 'Armată']].forEach(([key, icon, label]) => {
+            const award = document.createElement('button'); award.type = 'button'; award.className = 'sc-award';
+            const iconEl = document.createElement('b'); iconEl.textContent = icon;
+            award.append(iconEl, `${label} +2`);
+            award.setAttribute('aria-pressed', String(catanScore[key] === index));
+            award.setAttribute('aria-label', `${key === 'road' ? 'Cel mai lung drum' : 'Cea mai mare armată'} pentru ${name}`);
+            award.addEventListener('click', () => changeCatanScore(() => { catanScore[key] = catanScore[key] === index ? -1 : index; }));
+            controls.append(award);
           });
-          row.append(info, controls, chips);
-          scoreRowsElement.append(row);
+          card.append(top, bar, controls);
+          card.setAttribute('aria-label', `${name}: ${total} din ${catanWinningPoints} puncte`);
+          scoreRowsElement.append(card);
         });
       }
       const quickScoreElement = document.getElementById('quickScore');
