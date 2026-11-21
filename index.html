@@ -213,10 +213,12 @@
     .score-chip[aria-pressed="true"]{border-color:#ffe397;background:#3b3620;color:#ffe397}
     /* Fereastra de scor */
     #scoreDialog{padding:16px 14px 14px;background:#1c2134}
-    .sc-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 4px 12px}
+    .sc-head{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:10px;margin:2px 4px 12px}
     .sc-head h2{margin:0;font-size:22px}
     .sc-goal{font-size:13px;color:#aab3cf;font-weight:700}
-    .sc-goal b{color:#ffe397}
+    .sc-goal b{color:#ffe397;font-size:17px;min-width:22px;text-align:center;font-variant-numeric:tabular-nums}
+    .sc-goal-stepper{display:inline-flex;align-items:center;gap:4px;margin:0 4px;padding:2px;border-radius:10px;background:#141a2c;vertical-align:middle}
+    .sc-goal-stepper button{width:30px;height:30px;border:0;border-radius:8px;background:#373e58;color:#fff;font-size:18px;font-weight:800;line-height:1}
     .sc-list{display:grid;gap:10px}
     @media(min-width:640px){.sc-list.is-many{grid-template-columns:1fr 1fr}#scoreDialog:has(.sc-list.is-many){width:min(calc(100% - 24px),760px)}}
     .sc-card{position:relative;overflow:hidden;background:#252b42;border:1px solid #363d5a;border-radius:18px;padding:12px 12px 12px 16px}
@@ -423,10 +425,16 @@
   <dialog id="scoreDialog" class="stats-dialog" aria-labelledby="scoreTitle">
     <div class="sc-head">
       <h2 id="scoreTitle">⭐ Scor</h2>
-      <span class="sc-goal">primul la <b>10</b> câștigă</span>
+      <span class="sc-goal">primul la
+        <span class="sc-goal-stepper">
+          <button type="button" id="targetMinus" aria-label="Scade punctele pentru câștig">−</button>
+          <b id="targetValue">10</b>
+          <button type="button" id="targetPlus" aria-label="Crește punctele pentru câștig">+</button>
+        </span>
+        câștigă</span>
     </div>
     <div id="scoreRows" class="sc-list"></div>
-    <p class="sc-help">Așezare = 1 · Oraș = 2 · Carte de punct = 1 · 🛤️ și ⚔️ = +2 fiecare</p>
+    <p class="sc-help">Așezare = 1 · Oraș = 2 · Carte de punct = 1 · 🛤️ și ⚔️ = +2 fiecare · ținta se schimbă cu − / + de sus</p>
     <button class="sc-done" id="closeScore" type="button">Gata</button>
   </dialog>
   <div class="winner-overlay" id="winnerOverlay" role="alertdialog" aria-labelledby="winnerName">
@@ -504,6 +512,11 @@
         <input id="gameCatan" name="gameCatan" type="checkbox" />
         Catan
       </label>
+      <label class="settings-field-label" for="catanTarget">Catan: câștigă cine ajunge la</label>
+      <div class="settings-timer-row">
+        <select class="settings-select" id="catanTarget" name="catanTarget"></select>
+        <span class="settings-timer-unit">puncte</span>
+      </div>
       <p class="settings-note">Catan pornește automat 2 zaruri. Când pică 7 apare anunțul „Runda hoțului”, cu pașii de urmat.</p>
       <p class="settings-error" id="settingsError" role="alert"></p>
       <p class="settings-note">Setările cronometrului se aplică imediat, dar timpul scurs din tura curentă nu se reia de la zero. Doar „Încheie tura” pornește o tură nouă.</p>
@@ -775,6 +788,11 @@
         diceCountSelectElement.value = String(diceSettings.count);
         diceCountSelectElement.disabled = !diceSettings.enabled;
         gameCatanCheckboxElement.checked = gameSettings.catan;
+        const catanTargetSelect = document.getElementById('catanTarget');
+        if (!catanTargetSelect.options.length) {
+          for (let points = 5; points <= 20; points++) catanTargetSelect.add(new Option(points === 10 ? '10 (standard)' : String(points), String(points)));
+        }
+        catanTargetSelect.value = String(gameSettings.target || 10);
         document.getElementById('diceSound').value = diceSettings.sound || 'wood';
         if (typeof settingsDialog.showModal === 'function') settingsDialog.showModal();
         else settingsDialog.setAttribute('open', '');
@@ -829,7 +847,7 @@
           if (configuredTimerDurationSeconds === null) stopPlayingExpirationSoundImmediately();
           renderCircularTimerAtCurrentTime();
         }
-        gameSettings = { catan: gameCatanCheckboxElement.checked };
+        gameSettings = { catan: gameCatanCheckboxElement.checked, target: Number(document.getElementById('catanTarget').value) || 10 };
         saveGameSettings();
         const chosenDiceSound = document.getElementById('diceSound').value;
         diceSettings = gameSettings.catan
@@ -1256,9 +1274,12 @@
       function loadGameSettings() {
         try {
           const saved = JSON.parse(localStorage.getItem(gamesStorageKey));
-          if (saved && typeof saved.catan === 'boolean') return saved;
+          if (saved && typeof saved.catan === 'boolean') {
+            if (!Number.isInteger(saved.target) || saved.target < 3 || saved.target > 30) saved.target = 10;
+            return saved;
+          }
         } catch (_) {}
-        return { catan: false };
+        return { catan: false, target: 10 };
       }
       function saveGameSettings() {
         try { localStorage.setItem(gamesStorageKey, JSON.stringify(gameSettings)); } catch (_) {}
@@ -1475,7 +1496,7 @@
 
       // ===== Scor Catan (puncte de victorie) =====
       const catanScoreStorageKey = 'ture-catan-score-v1';
-      const catanWinningPoints = 10;
+      const winningPoints = () => gameSettings.target || 10;
       const scoreDialog = document.getElementById('scoreDialog');
       const scoreRowsElement = document.getElementById('scoreRows');
       const winnerOverlayElement = document.getElementById('winnerOverlay');
@@ -1512,6 +1533,9 @@
         playerElement.setAttribute('aria-label', `${playerNames[index]}: ${catanTotal(index)} puncte. Atinge pentru scor.`);
       }
       function renderScoreRows() {
+        document.getElementById('targetValue').textContent = winningPoints();
+        document.getElementById('targetMinus').disabled = winningPoints() <= 5;
+        document.getElementById('targetPlus').disabled = winningPoints() >= 20;
         scoreRowsElement.replaceChildren();
         scoreRowsElement.classList.toggle('is-many', playerNames.length > 3);
         const totals = playerNames.map((_, i) => catanTotal(i));
@@ -1533,13 +1557,13 @@
           if (index === turnIndex) { const turn = document.createElement('div'); turn.className = 'sc-turn'; turn.textContent = 'la rând'; who.append(turn); }
           const totalEl = document.createElement('div'); totalEl.className = 'sc-total';
           totalEl.append(String(total));
-          const of = document.createElement('small'); of.textContent = ` /${catanWinningPoints}`; totalEl.append(of);
+          const of = document.createElement('small'); of.textContent = ` /${winningPoints()}`; totalEl.append(of);
           top.append(avatar, who, totalEl);
           // Bară: puncte de bază în culoarea jucătorului, bonusuri aurii.
           const bar = document.createElement('div'); bar.className = 'sc-bar';
           bar.setAttribute('aria-hidden', 'true');
           const bonus = total - catanScore.base[index];
-          const segments = Math.max(catanWinningPoints, total);
+          const segments = Math.max(winningPoints(), total);
           for (let i = 0; i < segments; i++) {
             const seg = document.createElement('span');
             seg.className = 'sc-seg' + (i < catanScore.base[index] ? ' is-base' : i < catanScore.base[index] + bonus ? ' is-bonus' : '');
@@ -1567,7 +1591,7 @@
             controls.append(award);
           });
           card.append(top, bar, controls);
-          card.setAttribute('aria-label', `${name}: ${total} din ${catanWinningPoints} puncte`);
+          card.setAttribute('aria-label', `${name}: ${total} din ${winningPoints()} puncte`);
           scoreRowsElement.append(card);
         });
       }
@@ -1656,7 +1680,7 @@
         });
       }
       function checkForCatanWinner() {
-        const winnerIndex = playerNames.findIndex((_, i) => catanTotal(i) >= catanWinningPoints);
+        const winnerIndex = playerNames.findIndex((_, i) => catanTotal(i) >= winningPoints());
         if (winnerIndex === -1) { announcedWinnerIndex = -1; return; }
         if (winnerIndex === announcedWinnerIndex) return;
         announcedWinnerIndex = winnerIndex;
@@ -1690,6 +1714,17 @@
         playersContainerElement.classList.toggle('is-scoring', gameSettings.catan);
         document.getElementById('resetExtrasLabel').hidden = !(diceSettings.enabled || gameSettings.catan);
       }
+      function changeWinningPoints(delta) {
+        gameSettings.target = Math.min(20, Math.max(5, winningPoints() + delta));
+        saveGameSettings();
+        announcedWinnerIndex = -1;
+        renderScoreRows();
+        displayCurrentPlayerAndRound();
+        showScoreToast(`🏁 Se câștigă la ${winningPoints()} puncte`);
+        window.setTimeout(checkForCatanWinner, 400);
+      }
+      document.getElementById('targetMinus').addEventListener('click', () => changeWinningPoints(-1));
+      document.getElementById('targetPlus').addEventListener('click', () => changeWinningPoints(1));
       openScoreButton.addEventListener('click', openScoreDialog);
       playersContainerElement.addEventListener('click', () => { if (gameSettings.catan) openScoreDialog(); });
       document.getElementById('closeScore').addEventListener('click', () => scoreDialog.close());
