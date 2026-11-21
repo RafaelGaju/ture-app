@@ -112,6 +112,51 @@
     @media(max-width:350px){.settings-name-list{grid-template-columns:1fr}}
     .dialog-actions button{border:0;border-radius:11px;padding:12px 16px;font-weight:700}
     .cancel{background:#373e58;color:white}.confirm{background:#ad9bff;color:#11152c}
+    /* Butonul principal: text pe două rânduri când zarurile sunt active */
+    .end-text{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;text-align:center}
+    .end-main{overflow-wrap:anywhere;line-height:1.08}
+    .end-sub{font-size:clamp(13px,3.6vw,15px);font-weight:750;letter-spacing:0;opacity:.72}
+    .end-sub:empty{display:none}
+    .end.is-dice .end-main{font-size:clamp(26px,7.2vw,34px)}
+    /* Instalat ca aplicație: nu mai e nevoie de butonul de fullscreen (deci nici de mesajul Chrome) */
+    @media (display-mode: fullscreen), (display-mode: standalone){.fullscreen-toggle{display:none}}
+    .is-installed .fullscreen-toggle{display:none}
+    /* Rezultatul compact al zarurilor */
+    .dice-strip{display:none;align-items:center;justify-content:center;gap:7px;margin-top:10px;min-height:44px;padding:6px 14px;border:1px solid #3b4262;border-radius:14px;background:#1b2135;color:#dfe4f8;font-weight:800;font-size:16px}
+    .dice-strip.is-visible{display:flex}
+    .dice-strip .mini-die{width:28px;height:28px;border-radius:7px;background:linear-gradient(145deg,#fff,#d9d3ff);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:4px;box-shadow:0 2px 6px #0006}
+    .dice-strip .mini-die .pip{width:4.6px;height:4.6px}
+    .dice-strip .dice-total{margin-left:4px;color:#c9bfff}
+    .dice-strip .dice-hint{color:#aab3cf;font-size:14px;font-weight:700}
+    /* Zaruri 3D */
+    .pip{width:72%;height:72%;border-radius:50%;place-self:center;background:transparent}
+    .pip.on{background:radial-gradient(circle at 35% 35%,#3a3f66,#11142a);box-shadow:inset 0 1px 1px #fff3}
+    .dice-overlay{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(ellipse at 50% 45%,#1d2448f7,#050713fc);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .22s}
+    .dice-overlay.is-open{opacity:1;pointer-events:auto}
+    .dice-who{font-size:clamp(24px,7vw,34px);font-weight:900;letter-spacing:-.03em;text-align:center;padding:0 20px;color:var(--player-color,#c5a9ff)}
+    .dice-stage{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:calc(var(--s) * .34);max-width:min(94vw,440px);padding:26px 10px 10px;perspective:1000px}
+    .die-wrap{position:relative;width:var(--s);height:var(--s)}
+    .die-wrap::after{content:"";position:absolute;left:8%;right:8%;bottom:-22%;height:16%;border-radius:50%;background:#000a;filter:blur(7px);transform:scale(.9)}
+    .die-wrap.is-rolling{animation:die-hop 1.25s cubic-bezier(.3,.6,.4,1) both}
+    .die-wrap.is-rolling::after{animation:die-shadow 1.25s cubic-bezier(.3,.6,.4,1)}
+    @keyframes die-hop{0%{transform:translateY(-55vh) scale(.7)}38%{transform:translateY(0) scale(1)}52%{transform:translateY(-16%)}66%{transform:translateY(0)}76%{transform:translateY(-5%)}86%,100%{transform:translateY(0)}}
+    @keyframes die-shadow{0%{opacity:0;transform:scale(.3)}38%{opacity:1;transform:scale(.9)}52%{transform:scale(.7)}66%,100%{transform:scale(.9)}}
+    .die{position:absolute;inset:0;transform-style:preserve-3d;transition:transform 1.25s cubic-bezier(.15,.75,.25,1)}
+    .face{position:absolute;inset:0;border-radius:17%;background:linear-gradient(145deg,#ffffff 0%,#ece8ff 55%,#cfc6ff 100%);box-shadow:inset 0 0 calc(var(--s)*.12) #6f5fd033,inset 0 -3px 6px #0001;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:15%;backface-visibility:hidden}
+    .face.f1{transform:translateZ(calc(var(--s)/2))}
+    .face.f6{transform:rotateY(180deg) translateZ(calc(var(--s)/2))}
+    .face.f3{transform:rotateY(90deg) translateZ(calc(var(--s)/2))}
+    .face.f4{transform:rotateY(-90deg) translateZ(calc(var(--s)/2))}
+    .face.f2{transform:rotateX(90deg) translateZ(calc(var(--s)/2))}
+    .face.f5{transform:rotateX(-90deg) translateZ(calc(var(--s)/2))}
+    .face.f1 .pip.on{background:radial-gradient(circle at 35% 35%,#ff7d93,#c21f45)}
+    .dice-result{min-height:48px;margin-top:22px;font-size:clamp(28px,8vw,40px);font-weight:900;color:#fff;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;text-align:center}
+    .dice-result.is-shown{opacity:1;transform:none}
+    .dice-result small{display:block;font-size:14px;font-weight:700;color:#aab3cf;margin-top:2px}
+    .dice-close-hint{font-size:13px;color:#8e98b5;font-weight:650}
+    .settings-dice-row{display:flex;align-items:center;gap:12px}
+    .settings-dice-row .settings-select{flex:1}
+    @media(prefers-reduced-motion:reduce){.die-wrap.is-rolling,.die-wrap.is-rolling::after{animation:none}.die{transition-duration:.35s}}
     @media(max-height:680px){.players{margin-bottom:12px}.player{min-height:75px;padding:8px 4px;gap:5px}.center{min-height:215px;padding:2px 0}.end{min-height:clamp(150px,25svh,200px)}.actions{padding:10px 0 0}}
     @media(max-height:560px){.center{min-height:185px}.timer-frame{width:min(54vw,160px)}.name{font-size:42px}.timer-readout{font-size:22px}.timer-warning{font-size:9px;bottom:11%}.subtitle,.hint{font-size:12px}.players{margin-bottom:10px}.player{min-height:64px}.end{min-height:125px;padding:16px}.actions{padding-top:4px}}
   </style>
@@ -148,16 +193,23 @@
         <div class="timer-warning" id="timerWarning" aria-hidden="true"></div>
       </div>
       <div class="hint" id="nextText" aria-live="polite">Urmează Adi</div>
+      <button type="button" class="dice-strip" id="diceStrip" aria-label="Dă din nou cu zarul"></button>
       <span id="timerAnnouncement" role="status" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"></span>
     </section>
     <div class="players" id="players" aria-label="Jucători"></div>
-    <button class="end" id="endTurn" type="button">Încheie tura <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
+    <button class="end" id="endTurn" type="button"><span class="end-text"><span class="end-main" id="endTurnMain">Încheie tura</span><span class="end-sub" id="endTurnSub"></span></span><svg id="endTurnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
     <div class="actions">
       <button type="button" id="undo" class="small">↶ Înapoi</button>
       <button type="button" id="reset" class="small">↻ Resetează rundele</button>
     </div>
   </main>
   <div class="fullscreen-feedback" id="fullscreenFeedback" role="status" hidden></div>
+  <div class="dice-overlay" id="diceOverlay" aria-hidden="true">
+    <div class="dice-who" id="diceWho"></div>
+    <div class="dice-stage" id="diceStage"></div>
+    <div class="dice-result" id="diceResult" role="status" aria-live="polite"></div>
+    <div class="dice-close-hint">Atinge oriunde pentru a închide</div>
+  </div>
   <dialog id="resetDialog" aria-labelledby="resetTitle">
     <h2 id="resetTitle">Resetezi turele?</h2>
     <p id="resetDescription">Se revine la Miha, runda 1. Cronometrul nu se resetează.</p>
@@ -188,6 +240,18 @@
         Fără cronometru
       </label>
       <p class="settings-note">Implicit: 45 secunde. Poți alege între 1 secundă și 60 de minute. Alarma se activează doar când expiră un cronometru.</p>
+      <div class="settings-divider"></div>
+      <label class="settings-no-timer" for="diceEnabled">
+        <input id="diceEnabled" name="diceEnabled" type="checkbox" />
+        🎲 Folosește zaruri
+      </label>
+      <label class="settings-field-label" for="diceCount">Număr de zaruri</label>
+      <select class="settings-select" id="diceCount" name="diceCount">
+        <option value="1">1 zar</option><option value="2">2 zaruri</option>
+        <option value="3">3 zaruri</option><option value="4">4 zaruri</option>
+        <option value="5">5 zaruri</option><option value="6">6 zaruri</option>
+      </select>
+      <p class="settings-note">Cu zarurile pornite, butonul mare devine „[Următorul], dă cu zarul”: încheie tura și aruncă automat zarurile pentru jucătorul următor. Atinge rezultatul de sub cronometru ca să arunci din nou.</p>
       <p class="settings-error" id="settingsError" role="alert"></p>
       <p class="settings-note">Setările cronometrului se aplică imediat, dar timpul scurs din tura curentă nu se reia de la zero. Doar „Încheie tura” pornește o tură nouă.</p>
       <div class="dialog-actions">
@@ -436,6 +500,9 @@
         timerDisabledCheckboxElement.checked = configuredTimerDurationSeconds === null;
         timerDurationInputElement.value = String(configuredTimerDurationSeconds ?? defaultTimerDurationSeconds);
         updateTimerDurationInputAvailability();
+        diceEnabledCheckboxElement.checked = diceSettings.enabled;
+        diceCountSelectElement.value = String(diceSettings.count);
+        diceCountSelectElement.disabled = !diceSettings.enabled;
         if (typeof settingsDialog.showModal === 'function') settingsDialog.showModal();
         else settingsDialog.setAttribute('open', '');
       }
@@ -488,6 +555,9 @@
           if (configuredTimerDurationSeconds === null) stopPlayingExpirationSoundImmediately();
           renderCircularTimerAtCurrentTime();
         }
+        diceSettings = { enabled: diceEnabledCheckboxElement.checked, count: Number(diceCountSelectElement.value) };
+        saveDiceSettings();
+        renderDiceStrip();
         displayCurrentPlayerAndRound();
         closePlayerSettingsWithoutSaving();
       }
@@ -617,6 +687,7 @@
           playersContainerElement.append(playerElement);
         });
         undoButton.disabled = completedTurns === 0;
+        updateEndTurnButtonLabel();
       }
       function updateCompletedTurnsAndRefresh(nextCompletedTurns) {
         completedTurns = nextCompletedTurns;
@@ -626,15 +697,243 @@
       function playShortTurnChangeFeedback() {
         if (typeof navigator.vibrate === 'function') navigator.vibrate(35);
       }
+      // ===== Zaruri animate =====
+      const diceSettingsStorageKey = 'ture-dice-settings-v1';
+      const lastDiceRollStorageKey = 'ture-dice-last-roll-v1';
+      const pipLayoutByValue = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+      // Rotația cubului care aduce fața cu valoarea dată în față.
+      const cubeRotationForValue = {1:[0,0],2:[-90,0],3:[0,-90],4:[0,90],5:[90,0],6:[0,180]};
+      const diceEnabledCheckboxElement = document.getElementById('diceEnabled');
+      const diceCountSelectElement = document.getElementById('diceCount');
+      const diceStripButton = document.getElementById('diceStrip');
+      const diceOverlayElement = document.getElementById('diceOverlay');
+      const diceStageElement = document.getElementById('diceStage');
+      const diceResultElement = document.getElementById('diceResult');
+      const diceWhoElement = document.getElementById('diceWho');
+      const endTurnButton = document.getElementById('endTurn');
+      const endTurnMainElement = document.getElementById('endTurnMain');
+      const endTurnSubElement = document.getElementById('endTurnSub');
+      const endTurnIconElement = document.getElementById('endTurnIcon');
+      let diceSettings = loadDiceSettings();
+      let lastDiceRoll = loadLastDiceRoll();
+      let diceSpinCounter = 0;
+      let diceAutoCloseTimeoutId = 0;
+      let diceRevealTimeoutId = 0;
+
+      function loadDiceSettings() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(diceSettingsStorageKey));
+          if (saved && typeof saved.enabled === 'boolean' && Number.isInteger(saved.count) && saved.count >= 1 && saved.count <= 6) return saved;
+        } catch (_) { /* implicit */ }
+        return { enabled: false, count: 2 };
+      }
+      function saveDiceSettings() {
+        try { localStorage.setItem(diceSettingsStorageKey, JSON.stringify(diceSettings)); } catch (_) {}
+      }
+      function loadLastDiceRoll() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(lastDiceRollStorageKey));
+          if (Array.isArray(saved) && saved.length >= 1 && saved.length <= 6 && saved.every(v => Number.isInteger(v) && v >= 1 && v <= 6)) return saved;
+        } catch (_) {}
+        return null;
+      }
+      function saveLastDiceRoll() {
+        try { localStorage.setItem(lastDiceRollStorageKey, JSON.stringify(lastDiceRoll)); } catch (_) {}
+      }
+      function randomDieValue() {
+        if (window.crypto && crypto.getRandomValues) {
+          const buffer = new Uint8Array(1);
+          do { crypto.getRandomValues(buffer); } while (buffer[0] >= 252); // fără bias
+          return (buffer[0] % 6) + 1;
+        }
+        return Math.floor(Math.random() * 6) + 1;
+      }
+      function createPipGrid(container, value) {
+        const layout = pipLayoutByValue[value];
+        for (let cell = 0; cell < 9; cell++) {
+          const pip = document.createElement('span');
+          pip.className = layout.includes(cell) ? 'pip on' : 'pip';
+          container.append(pip);
+        }
+      }
+      function dieSizeForCount(count) {
+        const base = count === 1 ? 128 : count === 2 ? 112 : count <= 4 ? 92 : 78;
+        return Math.round(Math.min(base, window.innerWidth * (count === 1 ? 0.38 : count === 2 ? 0.3 : 0.24)));
+      }
+      function buildDiceStage(count) {
+        diceStageElement.replaceChildren();
+        diceStageElement.style.setProperty('--s', `${dieSizeForCount(count)}px`);
+        const dice = [];
+        for (let index = 0; index < count; index++) {
+          const wrap = document.createElement('div');
+          wrap.className = 'die-wrap';
+          const cube = document.createElement('div');
+          cube.className = 'die';
+          for (let value = 1; value <= 6; value++) {
+            const face = document.createElement('div');
+            face.className = `face f${value}`;
+            createPipGrid(face, value);
+            cube.append(face);
+          }
+          wrap.append(cube);
+          diceStageElement.append(wrap);
+          dice.push({ wrap, cube });
+        }
+        return dice;
+      }
+      function playDiceRattleSound() {
+        if (!expirationSoundEnabled || document.visibilityState !== 'visible') return;
+        const audioContext = expirationSoundAudioContext;
+        if (!audioContext || audioContext.state !== 'running') return;
+        const now = audioContext.currentTime;
+        // Clicuri scurte de zgomot filtrat: zarurile lovesc masa și se rostogolesc.
+        const hits = [0.44, 0.52, 0.63, 0.72, 0.80, 0.88, 0.97, 1.08];
+        hits.forEach((hitTime, hitIndex) => {
+          const length = Math.floor(audioContext.sampleRate * 0.035);
+          const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+          const source = audioContext.createBufferSource();
+          source.buffer = buffer;
+          const filter = audioContext.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 1800 + Math.random() * 1600;
+          filter.Q.value = 2.2;
+          const gain = audioContext.createGain();
+          gain.gain.value = 0.55 * Math.pow(0.82, hitIndex);
+          source.connect(filter); filter.connect(gain); gain.connect(audioContext.destination);
+          source.start(now + hitTime + Math.random() * 0.02);
+          source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+        });
+      }
+      function renderDiceStrip() {
+        const show = diceSettings.enabled;
+        diceStripButton.classList.toggle('is-visible', show);
+        if (!show) return;
+        diceStripButton.replaceChildren();
+        if (!lastDiceRoll || lastDiceRoll.length !== diceSettings.count) {
+          const hint = document.createElement('span');
+          hint.className = 'dice-hint';
+          hint.textContent = '🎲 Atinge pentru a da cu zarul';
+          diceStripButton.append(hint);
+          return;
+        }
+        lastDiceRoll.forEach(value => {
+          const mini = document.createElement('span');
+          mini.className = 'mini-die';
+          createPipGrid(mini, value);
+          diceStripButton.append(mini);
+        });
+        if (lastDiceRoll.length > 1) {
+          const total = document.createElement('span');
+          total.className = 'dice-total';
+          total.textContent = `= ${lastDiceRoll.reduce((a, b) => a + b, 0)}`;
+          diceStripButton.append(total);
+        }
+        diceStripButton.setAttribute('aria-label', `Ultima aruncare: ${lastDiceRoll.join(', ')}. Atinge pentru a arunca din nou.`);
+      }
+      function closeDiceOverlay() {
+        window.clearTimeout(diceAutoCloseTimeoutId);
+        window.clearTimeout(diceRevealTimeoutId);
+        diceOverlayElement.classList.remove('is-open');
+        diceOverlayElement.setAttribute('aria-hidden', 'true');
+        renderDiceStrip();
+      }
+      function rollDiceWithAnimation() {
+        const count = diceSettings.count;
+        const currentPlayerIndex = completedTurns % playerNames.length;
+        const values = Array.from({ length: count }, randomDieValue);
+        lastDiceRoll = values;
+        saveLastDiceRoll();
+        window.clearTimeout(diceAutoCloseTimeoutId);
+        window.clearTimeout(diceRevealTimeoutId);
+        diceWhoElement.textContent = `${playerNames[currentPlayerIndex]} dă cu zarul`;
+        diceWhoElement.style.setProperty('--player-color', playerColorPalette[currentPlayerIndex]);
+        diceResultElement.classList.remove('is-shown');
+        diceResultElement.textContent = '';
+        const dice = buildDiceStage(count);
+        diceOverlayElement.classList.add('is-open');
+        diceOverlayElement.setAttribute('aria-hidden', 'false');
+        // Poziție inițială aleatorie, apoi rotire spre fața finală cu câteva ture complete.
+        dice.forEach(({ wrap, cube }, index) => {
+          const startX = Math.floor(Math.random() * 4) * 90;
+          const startY = Math.floor(Math.random() * 4) * 90;
+          cube.style.transition = 'none';
+          cube.style.transform = `rotateZ(0deg) rotateX(${startX}deg) rotateY(${startY}deg)`;
+          wrap.style.animationDelay = `${index * 45}ms`;
+          cube.style.transitionDelay = `${index * 45}ms`;
+        });
+        void diceStageElement.offsetWidth; // aplică poziția inițială înainte de animație
+        diceSpinCounter += 1;
+        dice.forEach(({ wrap, cube }, index) => {
+          const [targetX, targetY] = cubeRotationForValue[values[index]];
+          const spinsX = (2 + Math.floor(Math.random() * 2)) * 360 * (Math.random() < .5 ? -1 : 1);
+          const spinsY = (2 + Math.floor(Math.random() * 2)) * 360 * (Math.random() < .5 ? -1 : 1);
+          const tilt = Math.round((Math.random() * 2 - 1) * 14);
+          cube.style.transition = '';
+          cube.style.transform = `rotateZ(${tilt}deg) rotateX(${targetX + spinsX}deg) rotateY(${targetY + spinsY}deg)`;
+          wrap.classList.add('is-rolling');
+          wrap.addEventListener('animationend', () => wrap.classList.remove('is-rolling'), { once: true });
+        });
+        playDiceRattleSound();
+        if (typeof navigator.vibrate === 'function') navigator.vibrate([18, 60, 14, 50, 10]);
+        diceRevealTimeoutId = window.setTimeout(() => {
+          const total = values.reduce((a, b) => a + b, 0);
+          diceResultElement.innerHTML = '';
+          diceResultElement.append(count > 1 ? `Total: ${total}` : `${total}`);
+          if (count > 1) {
+            const detail = document.createElement('small');
+            detail.textContent = values.join(' + ');
+            diceResultElement.append(detail);
+          }
+          diceResultElement.classList.add('is-shown');
+          renderDiceStrip();
+          diceAutoCloseTimeoutId = window.setTimeout(closeDiceOverlay, 2600);
+        }, 1350 + count * 45);
+      }
+      function updateEndTurnButtonLabel() {
+        const currentPlayerIndex = completedTurns % playerNames.length;
+        const nextPlayerName = playerNames[(currentPlayerIndex + 1) % playerNames.length];
+        const diceMode = diceSettings.enabled;
+        endTurnButton.classList.toggle('is-dice', diceMode);
+        if (diceMode) {
+          endTurnMainElement.textContent = playerNames.length === 1 ? 'Dă cu zarul' : `${nextPlayerName}, dă cu zarul`;
+          endTurnSubElement.textContent = playerNames.length === 1 ? 'tură nouă' : `încheie tura lui ${playerNames[currentPlayerIndex]}`;
+          endTurnIconElement.innerHTML = '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>';
+        } else {
+          endTurnMainElement.textContent = 'Încheie tura';
+          endTurnSubElement.textContent = '';
+          endTurnIconElement.innerHTML = '<path d="M5 12h14m-6-6 6 6-6 6" />';
+        }
+      }
+      diceStripButton.addEventListener('click', rollDiceWithAnimation);
+      diceOverlayElement.addEventListener('click', closeDiceOverlay);
+      diceEnabledCheckboxElement.addEventListener('change', () => { diceCountSelectElement.disabled = !diceEnabledCheckboxElement.checked; });
+
+      // ===== Ecran mereu aprins (Screen Wake Lock) =====
+      let screenWakeLock = null;
+      async function keepScreenAwake() {
+        if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || screenWakeLock) return;
+        try {
+          screenWakeLock = await navigator.wakeLock.request('screen');
+          screenWakeLock.addEventListener('release', () => { screenWakeLock = null; });
+        } catch (_) { /* ex. mod economisire baterie */ }
+      }
+      document.addEventListener('visibilitychange', keepScreenAwake);
+      document.addEventListener('pointerdown', keepScreenAwake, { passive: true });
+      const appIsInstalled = window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
+      document.documentElement.classList.toggle('is-installed', appIsInstalled);
+
       settingsToggleButton.addEventListener('click', openPlayerSettingsWithoutChangingCurrentTimer);
       document.getElementById('cancelSettings').addEventListener('click', closePlayerSettingsWithoutSaving);
       playerCountSelectElement.addEventListener('change', renderEditablePlayerNameInputs);
       timerDisabledCheckboxElement.addEventListener('change', updateTimerDurationInputAvailability);
       playerSettingsForm.addEventListener('submit', saveConfiguredPlayersFromSettingsForm);
-      document.getElementById('endTurn').addEventListener('click', () => {
+      endTurnButton.addEventListener('click', () => {
         updateCompletedTurnsAndRefresh(completedTurns + 1);
         startNewTimerOnlyAfterEndingTurn();
-        playShortTurnChangeFeedback();
+        if (diceSettings.enabled) rollDiceWithAnimation();
+        else playShortTurnChangeFeedback();
       });
       undoButton.addEventListener('click', () => {
         if (completedTurns > 0) updateCompletedTurnsAndRefresh(completedTurns - 1);
@@ -702,6 +1001,8 @@
       saveCurrentTurnTimerStart();
       displayCurrentPlayerAndRound();
       updateSoundToggleAppearance();
+      renderDiceStrip();
+      keepScreenAwake();
       keepCircularTimerSmoothlyUpdated();
     })();
   </script>

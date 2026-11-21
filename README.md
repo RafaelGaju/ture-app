@@ -1,7 +1,8 @@
 # Ture — cronometru de joc (PWA)
 
 Aplicație web instalabilă pentru schimbarea turelor la 1–6 jucători, cu timer configurabil,
-semnal discret la 15 secunde rămase și alarmă la 00:00. Funcționează offline după prima deschidere.
+semnal discret la 15 secunde rămase, alarmă la 00:00 și zaruri 3D animate (1–6, opțional din Setări).
+Instalată pe telefon rulează în fullscreen și ține ecranul aprins. Funcționează offline după prima deschidere.
 
 **Live:** https://rafaelgaju.github.io/ture-app/
 

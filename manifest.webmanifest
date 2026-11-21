@@ -2,11 +2,11 @@
   "id": "./index.html",
   "name": "Ture — Cronometru de joc",
   "short_name": "Ture",
-  "description": "Schimbă turele pentru 1–6 jucători, cu timer configurabil și alarmă la expirare.",
+  "description": "Schimbă turele pentru 1–6 jucători, cu timer configurabil, zaruri animate și alarmă la expirare.",
   "lang": "ro-RO",
   "start_url": "./index.html",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#101423",
   "theme_color": "#101423",
   "categories": [
@@ -32,5 +32,10 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "portrait"
 }
