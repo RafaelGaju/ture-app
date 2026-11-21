@@ -391,7 +391,7 @@
       </div>
       <span class="qs-sep" aria-hidden="true"></span>
       <div class="qs-group qs-awards">
-      <button type="button" data-award="road" class="qs-award" aria-label="Cel mai lung drum la jucătorul curent"><b>🛣️</b>Drum</button>
+      <button type="button" data-award="road" class="qs-award" aria-label="Cel mai lung drum la jucătorul curent"><b>🛤️</b>Drum</button>
       <button type="button" data-award="army" class="qs-award" aria-label="Cea mai mare armată la jucătorul curent"><b>⚔️</b>Armată</button>
       </div>
       <span class="qs-sep" aria-hidden="true"></span>
@@ -425,7 +425,7 @@
       <span class="sc-goal">primul la <b>10</b> câștigă</span>
     </div>
     <div id="scoreRows" class="sc-list"></div>
-    <p class="sc-help">Așezare = 1 · Oraș = 2 · Carte de punct = 1 · 🛣️ și ⚔️ = +2 fiecare</p>
+    <p class="sc-help">Așezare = 1 · Oraș = 2 · Carte de punct = 1 · 🛤️ și ⚔️ = +2 fiecare</p>
     <button class="sc-done" id="closeScore" type="button">Gata</button>
   </dialog>
   <div class="winner-overlay" id="winnerOverlay" role="alertdialog" aria-labelledby="winnerName">
@@ -1109,7 +1109,7 @@
         if (robberRoll) {
           const tag = document.createElement('span');
           tag.className = 'robber-tag';
-          tag.textContent = '🦹 Hoțul';
+          tag.textContent = '🥷 Hoțul';
           diceStripButton.append(tag);
         }
         diceStripButton.setAttribute('aria-label', `Ultima aruncare: ${lastDiceRoll.join(', ')}. Atinge pentru a arunca din nou.`);
@@ -1233,7 +1233,7 @@
         robberPanelElement.replaceChildren();
         const title = document.createElement('div');
         title.className = 'robber-title';
-        title.textContent = '🦹 Runda hoțului!';
+        title.textContent = '🥷 Runda hoțului!';
         const sub = document.createElement('div');
         sub.className = 'robber-sub';
         sub.textContent = 'A picat 7 — nimeni nu primește resurse.';
@@ -1395,7 +1395,7 @@
           const dice = document.createElement('span'); dice.className = 'history-dice'; dice.textContent = entry.v.map(v => diceFaceCharacters[v]).join('');
           dice.setAttribute('aria-label', entry.v.join(' + '));
           const total = document.createElement('span'); total.className = 'history-sum';
-          total.textContent = item.classList.contains('is-seven') ? `🦹${sum}` : String(sum);
+          total.textContent = item.classList.contains('is-seven') ? `🥷${sum}` : String(sum);
           item.append(round, player, dice, total);
           list.append(item);
         });
@@ -1451,7 +1451,7 @@
         vp.textContent = `⭐ ${catanTotal(index)}`;
         if (index === bumpedPlayerIndex) { vp.classList.add('is-bumped'); bumpedPlayerIndex = -1; }
         playerElement.append(vp);
-        const badges = (catanScore.road === index ? '🛣️' : '') + (catanScore.army === index ? '⚔️' : '');
+        const badges = (catanScore.road === index ? '🛤️' : '') + (catanScore.army === index ? '⚔️' : '');
         if (badges) vp.textContent += ` ${badges}`;
         playerElement.setAttribute('role', 'button');
         playerElement.setAttribute('aria-label', `${playerNames[index]}: ${catanTotal(index)} puncte. Atinge pentru scor.`);
@@ -1502,7 +1502,7 @@
           plus.addEventListener('click', () => changeCatanScore(() => { catanScore.base[index] = Math.min(20, catanScore.base[index] + 1); }));
           stepper.append(minus, base, plus);
           controls.append(stepper);
-          [['road', '🛣️', 'Drum'], ['army', '⚔️', 'Armată']].forEach(([key, icon, label]) => {
+          [['road', '🛤️', 'Drum'], ['army', '⚔️', 'Armată']].forEach(([key, icon, label]) => {
             const award = document.createElement('button'); award.type = 'button'; award.className = 'sc-award';
             const iconEl = document.createElement('b'); iconEl.textContent = icon;
             award.append(iconEl, `${label} +2`);
@@ -1533,7 +1533,7 @@
         if (awardButton) {
           const index = completedTurns % playerNames.length;
           const key = awardButton.dataset.award;
-          const awardName = key === 'road' ? '🛣️ Cel mai lung drum' : '⚔️ Cea mai mare armată';
+          const awardName = key === 'road' ? '🛤️ Cel mai lung drum' : '⚔️ Cea mai mare armată';
           const previousHolder = catanScore[key];
           bumpedPlayerIndex = index;
           changeCatanScore(() => { catanScore[key] = previousHolder === index ? -1 : index; });
