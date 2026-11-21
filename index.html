@@ -277,10 +277,16 @@
     .score-toast.is-shown{transform:translate(-50%,0);visibility:visible;transition:transform .25s}
     @media(max-height:680px){.quick-score{margin:-4px 0 10px}.quick-score button{min-height:40px}.quick-score button b{font-size:15px}}
     @media(max-height:680px){main:has(.quick-score.is-visible) .end{min-height:112px;padding:14px}main:has(.quick-score.is-visible) .players{margin-bottom:12px}}
-    .goal-line{margin-top:8px;padding:4px 12px;border-radius:999px;background:#3b3620;color:#ffe397;font-weight:800;font-size:13px;white-space:nowrap}
+    .header-right{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
+    .goal-line{padding:9px 12px;border-radius:999px;background:#3b3620;border:1px solid #ffe39744;color:#ffe397;font-weight:800;font-size:13px;white-space:nowrap}
     .goal-line[hidden]{display:none}
+    .goal-long{display:none}
+    header.has-goal .eyebrow{display:none}
+    header.has-goal .header-right{flex:1;justify-content:space-between}
+    @media(max-width:410px){.goal-line{padding:8px 9px;font-size:12px}}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
+    .settings-range{width:100%;accent-color:#aa9bff;height:32px}
     .sound-preview{border:0;border-radius:12px;padding:12px 14px;font-weight:800;white-space:nowrap}
     @media(prefers-reduced-motion:reduce){.die-wrap.is-rolling,.die-wrap.is-rolling::after{animation:none}.die{transition-duration:.35s}}
     @media(max-height:680px){.players{margin-bottom:12px}.player{min-height:75px;padding:8px 4px;gap:5px}.center{min-height:215px;padding:2px 0}.end{min-height:clamp(150px,calc(var(--uvh) * 25),200px)}.actions{padding:10px 0 0}}
@@ -321,7 +327,13 @@
     /* ===== Landscape (tabletă / telefon întors): două coloane ===== */
     @media (orientation: landscape) and (min-width: 700px){
       main{width:min(100%,1280px);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;column-gap:clamp(20px,calc(var(--uvw) * 4),56px);align-content:stretch;padding:max(16px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
-      header{grid-column:1 / -1}
+      header{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);column-gap:clamp(20px,calc(var(--uvw) * 4),56px)}
+      header .eyebrow{grid-column:1}
+      header.has-goal .eyebrow{display:block}
+      header .header-right{grid-column:2;margin-left:0;justify-content:flex-end}
+      header.has-goal .header-right{justify-content:space-between}
+      .goal-long{display:inline}
+      .goal-short{display:none}
       .center{grid-column:1;grid-row:2 / span 4;min-height:0;padding:8px 0}
       .timer-frame{width:min(calc(var(--uvw) * 40),calc(var(--uvh) * 62),440px)}
       .name{font-size:clamp(46px,min(calc(var(--uvw) * 7),calc(var(--uvh) * 11)),92px)}
@@ -358,6 +370,8 @@
   <main>
     <header>
       <div class="eyebrow">TURA CURENTĂ</div>
+      <div class="header-right">
+      <div class="goal-line" id="goalLine" hidden><span class="goal-long"></span><span class="goal-short"></span></div>
       <div class="header-actions">
         <div class="round" id="roundText">Runda 1</div>
         <button type="button" class="sound-toggle" id="soundToggle" aria-label="Oprește sunetul" aria-pressed="true" title="Sunet pornit (atinge ecranul o dată pentru activarea audio)">
@@ -369,6 +383,7 @@
         <button type="button" class="fullscreen-toggle" id="fullscreenToggle" aria-label="Activează ecranul complet" title="Ecran complet">
           <svg id="fullscreenIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" /></svg>
         </button>
+      </div>
       </div>
     </header>
     <section class="center" aria-label="Tura și cronometrul">
@@ -387,7 +402,6 @@
       </div>
       <div class="hint" id="nextText" aria-live="polite">Urmează Adi</div>
       <button type="button" class="dice-strip" id="diceStrip" aria-label="Dă din nou cu zarul"></button>
-      <div class="goal-line" id="goalLine" hidden></div>
       <span id="timerAnnouncement" role="status" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"></span>
     </section>
     <div class="players" id="players" aria-label="Jucători"></div>
@@ -504,12 +518,16 @@
       <label class="settings-field-label" for="diceSound">Sunet zaruri</label>
       <div class="settings-dice-row">
         <select class="settings-select" id="diceSound" name="diceSound">
-          <option value="wood">Masă de lemn</option>
-          <option value="felt">Pâslă (mai încet)</option>
+          <option value="soft">Discret — o singură atingere moale</option>
+          <option value="chime">Ton blând — notă muzicală, fără zgomot</option>
+          <option value="felt">Realist — pe pâslă</option>
+          <option value="wood">Realist — pe masă de lemn</option>
           <option value="off">Fără sunet de zar</option>
         </select>
         <button type="button" class="cancel sound-preview" id="diceSoundPreview">▶ Ascultă</button>
       </div>
+      <label class="settings-field-label" for="diceVolume">Volum zaruri <span id="diceVolumeLabel"></span></label>
+      <input type="range" id="diceVolume" class="settings-range" min="5" max="100" step="5" value="50" />
       <p class="settings-note">Cu zarurile pornite, butonul mare devine „[Următorul], dă cu zarul”: încheie tura și aruncă automat zarurile pentru jucătorul următor. Atinge rezultatul de sub cronometru ca să arunci din nou.</p>
       <div class="settings-divider"></div>
       <span class="settings-field-label">🎲 Jocuri de societate</span>
@@ -798,7 +816,9 @@
           for (let points = 5; points <= 20; points++) catanTargetSelect.add(new Option(points === 10 ? '10 (standard)' : String(points), String(points)));
         }
         catanTargetSelect.value = String(gameSettings.target || 10);
-        document.getElementById('diceSound').value = diceSettings.sound || 'wood';
+        document.getElementById('diceSound').value = diceSettings.sound || 'soft';
+        document.getElementById('diceVolume').value = String(Math.round((diceSettings.volume || 0.5) * 100));
+        document.getElementById('diceVolumeLabel').textContent = `${document.getElementById('diceVolume').value}%`;
         if (typeof settingsDialog.showModal === 'function') settingsDialog.showModal();
         else settingsDialog.setAttribute('open', '');
       }
@@ -855,9 +875,10 @@
         gameSettings = { catan: gameCatanCheckboxElement.checked, target: Number(document.getElementById('catanTarget').value) || 10 };
         saveGameSettings();
         const chosenDiceSound = document.getElementById('diceSound').value;
+        const chosenDiceVolume = Number(document.getElementById('diceVolume').value) / 100;
         diceSettings = gameSettings.catan
-          ? { enabled: true, count: 2, sound: chosenDiceSound }
-          : { enabled: diceEnabledCheckboxElement.checked, count: Number(diceCountSelectElement.value), sound: chosenDiceSound };
+          ? { enabled: true, count: 2, sound: chosenDiceSound, volume: chosenDiceVolume }
+          : { enabled: diceEnabledCheckboxElement.checked, count: Number(diceCountSelectElement.value), sound: chosenDiceSound, volume: chosenDiceVolume };
         saveDiceSettings();
         renderDiceStrip();
         displayCurrentPlayerAndRound();
@@ -970,7 +991,9 @@
           ? 'Un singur jucător' : `Urmează ${playerNames[nextPlayerIndex]}`;
         const goalLineElement = document.getElementById('goalLine');
         goalLineElement.hidden = !gameSettings.catan;
-        goalLineElement.textContent = `🏁 Se câștigă la ${gameSettings.target || 10} puncte`;
+        goalLineElement.querySelector('.goal-long').textContent = `🏁 Se câștigă la ${gameSettings.target || 10} puncte`;
+        goalLineElement.querySelector('.goal-short').textContent = `🏁 Până la ${gameSettings.target || 10}`;
+        document.querySelector('header').classList.toggle('has-goal', gameSettings.catan);
         resetDescriptionElement.textContent = `Se revine la ${playerNames[0]}, runda 1. Cronometrul nu se resetează.`;
         document.title = `Ture — ${playerNames.join(' · ')}`;
 
@@ -1031,11 +1054,12 @@
         try {
           const saved = JSON.parse(localStorage.getItem(diceSettingsStorageKey));
           if (saved && typeof saved.enabled === 'boolean' && Number.isInteger(saved.count) && saved.count >= 1 && saved.count <= 6) {
-            if (!['wood', 'felt', 'off'].includes(saved.sound)) saved.sound = 'wood';
+            if (!['soft', 'chime', 'wood', 'felt', 'off'].includes(saved.sound)) saved.sound = 'soft';
+            if (!(saved.volume >= 0.05 && saved.volume <= 1)) saved.volume = 0.5;
             return saved;
           }
         } catch (_) { /* implicit */ }
-        return { enabled: false, count: 2, sound: 'wood' };
+        return { enabled: false, count: 2, sound: 'soft', volume: 0.5 };
       }
       function saveDiceSettings() {
         try { localStorage.setItem(diceSettingsStorageKey, JSON.stringify(diceSettings)); } catch (_) {}
@@ -1116,49 +1140,77 @@
             .catch(() => { /* fără acea mostră */ });
         }));
       }
-      function playDiceRattleSound(forceSurface) {
-        const surface = forceSurface || diceSettings.sound || 'wood';
-        if (surface === 'off' || !expirationSoundEnabled || document.visibilityState !== 'visible') return;
+      function playDiceRattleSound(forceStyle, forceVolume) {
+        const style = forceStyle || diceSettings.sound || 'soft';
+        if (style === 'off' || !expirationSoundEnabled || document.visibilityState !== 'visible') return;
         const audioContext = expirationSoundAudioContext;
         if (!audioContext || audioContext.state !== 'running') return;
         preloadDiceSamples();
-        const surfaceSamples = decodedDiceSamples[surface];
-        const hitSamples = decodedDiceSamples.hit;
-        if (!surfaceSamples.length) return;
+        const volume = forceVolume ?? diceSettings.volume ?? 0.5;
         const now = audioContext.currentTime + 0.01;
         const diceCount = diceSettings.count;
         const soundingDice = Math.min(diceCount, 4);
         const master = audioContext.createGain();
-        master.gain.value = (surface === 'felt' ? 1.0 : 0.7) / Math.sqrt(soundingDice);
+        master.gain.value = volume * 1.4 / Math.sqrt(soundingDice);
         master.connect(audioContext.destination);
         window.setTimeout(() => master.disconnect(), 2500);
         const pick = list => list[Math.floor(Math.random() * list.length)];
         const jitter = amount => (Math.random() - 0.5) * amount;
-        function play(buffer, at, loudness) {
+        const landing = 0.475; // momentul în care zarurile ating masa în animație
+        function playSample(buffer, at, loudness, rate) {
           if (!buffer) return;
           const source = audioContext.createBufferSource();
           source.buffer = buffer;
-          source.playbackRate.value = 0.92 + Math.random() * 0.16; // variație naturală
+          source.playbackRate.value = rate || (0.92 + Math.random() * 0.16);
           const gain = audioContext.createGain();
           gain.gain.value = loudness;
           source.connect(gain); gain.connect(master);
           source.start(now + Math.max(0, at));
           source.onended = () => { source.disconnect(); gain.disconnect(); };
         }
-        // Zarurile se lovesc între ele în mână (doar dacă sunt mai multe).
-        if (diceCount > 1 && hitSamples.length) {
-          for (let t = 0.03; t < 0.36; t += 0.05 + Math.random() * 0.05) play(pick(hitSamples), t, 0.18 + Math.random() * 0.12);
+        if (style === 'chime') {
+          // Notă blândă tip marimbă: sinus + armonică, atac lin, stingere lungă. O notă pe zar (pentatonic).
+          const notes = [523.25, 659.25, 783.99, 880, 1046.5];
+          for (let die = 0; die < soundingDice; die++) {
+            const at = now + landing + die * 0.07;
+            const frequency = notes[(die * 2 + Math.floor(Math.random() * 2)) % notes.length];
+            [[1, 0.5], [4, 0.06]].forEach(([multiple, level]) => {
+              const oscillator = audioContext.createOscillator();
+              const gain = audioContext.createGain();
+              oscillator.type = 'sine';
+              oscillator.frequency.value = frequency * multiple;
+              gain.gain.setValueAtTime(0.0001, at);
+              gain.gain.linearRampToValueAtTime(level, at + 0.012);
+              gain.gain.exponentialRampToValueAtTime(0.0001, at + (multiple === 1 ? 0.9 : 0.25));
+              oscillator.connect(gain); gain.connect(master);
+              oscillator.start(at); oscillator.stop(at + 0.95);
+              oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+            });
+          }
+          return;
         }
-        // Impacturi sincronizate cu animația: aterizare 0,475 s, săritură 0,825 s, 1,075 s.
+        const surfaceSamples = decodedDiceSamples[style === 'wood' ? 'wood' : 'felt'];
+        const hitSamples = decodedDiceSamples.hit;
+        if (!surfaceSamples.length) return;
+        if (style === 'soft') {
+          // Doar aterizarea, pe pâslă, ușor mai grav și fără zornăit sau sărituri.
+          for (let die = 0; die < soundingDice; die++) {
+            playSample(pick(surfaceSamples), landing + die * 0.05 + jitter(0.01), die ? 0.7 : 0.85, 0.82 + Math.random() * 0.08);
+          }
+          return;
+        }
+        // Realist: zornăit în mână (mai multe zaruri), aterizare + 2 sărituri, așezare.
+        if (diceCount > 1 && hitSamples.length) {
+          for (let t = 0.03; t < 0.36; t += 0.05 + Math.random() * 0.05) playSample(pick(hitSamples), t, 0.18 + Math.random() * 0.12);
+        }
         [[0.475, 1.0], [0.825, 0.42], [1.075, 0.17]].forEach(([at, loudness], bounceIndex) => {
           for (let die = 0; die < soundingDice; die++) {
             const time = at + die * 0.045 + jitter(0.012);
-            play(pick(surfaceSamples), time, loudness * (die ? 0.85 : 1));
-            if (diceCount > 1 && hitSamples.length && bounceIndex < 2 && die === 1) play(pick(hitSamples), time + 0.02, loudness * 0.5);
+            playSample(pick(surfaceSamples), time, loudness * (die ? 0.85 : 1));
+            if (diceCount > 1 && hitSamples.length && bounceIndex < 2 && die === 1) playSample(pick(hitSamples), time + 0.02, loudness * 0.5);
           }
         });
-        // Ultima așezare, foarte încet, când se oprește rotirea.
-        if (hitSamples.length) play(pick(hitSamples), 1.2 + jitter(0.03), 0.1);
+        if (hitSamples.length) playSample(pick(hitSamples), 1.2 + jitter(0.03), 0.1);
       }
       function renderDiceStrip() {
         const show = diceSettings.enabled;
@@ -1742,13 +1794,17 @@
       document.getElementById('diceSoundPreview').addEventListener('click', () => {
         activateExpirationSoundAfterUserInteraction();
         const surface = document.getElementById('diceSound').value;
+        const previewVolume = Number(document.getElementById('diceVolume').value) / 100;
         if (surface === 'off') return;
         if (!expirationSoundEnabled) { settingsErrorElement.textContent = 'Sunetul aplicației e oprit (iconița 🔈 de sus).'; return; }
         const tryPlay = attempt => {
-          if (decodedDiceSamples[surface].length || attempt > 20) playDiceRattleSound(surface);
+          if (surface === 'chime' || decodedDiceSamples.felt.length || attempt > 20) playDiceRattleSound(surface, previewVolume);
           else window.setTimeout(() => tryPlay(attempt + 1), 100);
         };
         tryPlay(0);
+      });
+      document.getElementById('diceVolume').addEventListener('input', event => {
+        document.getElementById('diceVolumeLabel').textContent = `${event.target.value}%`;
       });
       diceStripButton.addEventListener('click', rollDiceWithAnimation);
       diceOverlayElement.addEventListener('click', closeDiceOverlay);
