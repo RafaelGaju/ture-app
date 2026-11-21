@@ -154,12 +154,15 @@
     .dice-result.is-shown{opacity:1;transform:none}
     .dice-result small{display:block;font-size:14px;font-weight:700;color:#aab3cf;margin-top:2px}
     .dice-close-hint{font-size:13px;color:#8e98b5;font-weight:650}
-    .robber-panel{display:none;width:min(calc(var(--uvw) * 92),400px);margin-top:6px;padding:16px 18px;border:1px solid #ff6a7d88;border-radius:18px;background:linear-gradient(160deg,#3a1624f2,#24101bf2);box-shadow:0 0 40px #ff3d5e33;text-align:left;animation:robber-in .35s ease-out}
+    .robber-panel{display:none;width:min(calc(var(--uvw) * 95),600px);margin-top:6px;padding:16px 18px;border:1px solid #ff6a7d88;border-radius:18px;background:linear-gradient(160deg,#3a1624f2,#24101bf2);box-shadow:0 0 40px #ff3d5e33;text-align:left;animation:robber-in .35s ease-out}
     .robber-panel.is-shown{display:block}
     .robber-title{font-size:clamp(24px,calc(var(--uvw) * 7),30px);font-weight:900;color:#ff9bac;letter-spacing:-.02em;text-align:center}
-    .robber-sub{font-size:14px;color:#f3c4cd;text-align:center;margin:2px 0 10px;font-weight:650}
-    .robber-steps{margin:0;padding-left:22px;color:#fbe9ec;font-size:15px;line-height:1.45;font-weight:600}
-    .robber-steps li{margin:6px 0}
+    .robber-sub{font-size:15px;color:#f3c4cd;text-align:center;margin:2px 0 10px;font-weight:650}
+    .robber-steps{list-style:none;margin:4px 0 0;padding:0;color:#fbe9ec;font-weight:650;display:grid;gap:8px}
+    .robber-steps li{display:flex;align-items:center;gap:10px;white-space:nowrap;overflow:hidden;font-size:18px;line-height:1.25;background:#0000002e;border-radius:12px;padding:10px 12px}
+    .robber-steps .step-icon{flex:0 0 auto;font-size:1.25em}
+    .robber-steps .step-text{min-width:0}
+    @media(max-width:430px){.robber-panel{padding:14px 10px}.robber-steps li{padding:9px 8px;gap:7px}}
     .robber-steps b{color:#fff}
     .robber-ok{display:block;width:100%;margin-top:12px;border:0;border-radius:12px;padding:13px;background:#ff7287;color:#2a0d16;font-weight:900;font-size:16px}
     @keyframes robber-in{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:none}}
@@ -1430,21 +1433,24 @@
         title.textContent = '🥷 Runda hoțului!';
         const sub = document.createElement('div');
         sub.className = 'robber-sub';
-        sub.textContent = 'A picat 7 — nimeni nu primește resurse.';
+        sub.textContent = 'A picat 7 · nimeni nu primește resurse';
         const steps = document.createElement('ol');
         steps.className = 'robber-steps';
         const stepContents = [
-          ['Oricine are ', 'mai mult de 7 cărți', ' de resurse dă ', 'jumătate', ' (rotunjit în jos).'],
-          ['', playerName, ' mută hoțul pe ', 'alt teren', '.'],
-          ['', playerName, ' fură ', 'o carte la întâmplare', ' de la un jucător cu așezare sau oraș lângă acel teren.']
+          ['🃏', ['', 'Peste 7 cărți', ': dai ', 'jumătate', ', rotunjit în jos']],
+          ['🥷', ['', playerName, ' mută hoțul pe ', 'alt teren', '']],
+          ['✋', ['', playerName, ' fură ', 'o carte', ' de la cineva de lângă hoț']]
         ];
-        stepContents.forEach(parts => {
+        stepContents.forEach(([icon, parts]) => {
           const item = document.createElement('li');
+          const iconEl = document.createElement('span'); iconEl.className = 'step-icon'; iconEl.textContent = icon;
+          const text = document.createElement('span'); text.className = 'step-text';
           parts.forEach((part, index) => {
             if (!part) return;
-            if (index % 2 === 1) { const bold = document.createElement('b'); bold.textContent = part; item.append(bold); }
-            else item.append(part);
+            if (index % 2 === 1) { const bold = document.createElement('b'); bold.textContent = part; text.append(bold); }
+            else text.append(part);
           });
+          item.append(iconEl, text);
           steps.append(item);
         });
         const ok = document.createElement('button');
@@ -1453,6 +1459,12 @@
         ok.textContent = 'Am înțeles';
         robberPanelElement.append(title, sub, steps, ok);
         robberPanelElement.classList.add('is-shown');
+        // Fiecare pas pe un singur rând: micșorează textul doar cât e nevoie.
+        robberPanelElement.querySelectorAll('.robber-steps li').forEach(item => {
+          let size = 18;
+          item.style.fontSize = `${size}px`;
+          while (item.scrollWidth > item.clientWidth && size > 11) { size -= 0.5; item.style.fontSize = `${size}px`; }
+        });
         diceOverlayElement.classList.add('is-robber');
         playRobberSound();
         if (typeof navigator.vibrate === 'function') navigator.vibrate([220, 90, 220, 90, 450]);
