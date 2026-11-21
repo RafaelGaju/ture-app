@@ -277,7 +277,8 @@
     .score-toast.is-shown{transform:translate(-50%,0);visibility:visible;transition:transform .25s}
     @media(max-height:680px){.quick-score{margin:-4px 0 10px}.quick-score button{min-height:40px}.quick-score button b{font-size:15px}}
     @media(max-height:680px){main:has(.quick-score.is-visible) .end{min-height:112px;padding:14px}main:has(.quick-score.is-visible) .players{margin-bottom:12px}}
-    .goal-chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#3b3620;color:#ffe397;font-weight:800;font-size:.92em;white-space:nowrap}
+    .goal-line{margin-top:8px;padding:4px 12px;border-radius:999px;background:#3b3620;color:#ffe397;font-weight:800;font-size:13px;white-space:nowrap}
+    .goal-line[hidden]{display:none}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     .sound-preview{border:0;border-radius:12px;padding:12px 14px;font-weight:800;white-space:nowrap}
@@ -386,6 +387,7 @@
       </div>
       <div class="hint" id="nextText" aria-live="polite">Urmează Adi</div>
       <button type="button" class="dice-strip" id="diceStrip" aria-label="Dă din nou cu zarul"></button>
+      <div class="goal-line" id="goalLine" hidden></div>
       <span id="timerAnnouncement" role="status" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"></span>
     </section>
     <div class="players" id="players" aria-label="Jucători"></div>
@@ -966,12 +968,9 @@
         roundTextElement.textContent = `Runda ${Math.floor(completedTurns / playerNames.length) + 1}`;
         nextTextElement.textContent = playerNames.length === 1
           ? 'Un singur jucător' : `Urmează ${playerNames[nextPlayerIndex]}`;
-        if (gameSettings.catan) {
-          const goal = document.createElement('span');
-          goal.className = 'goal-chip';
-          goal.textContent = `🏁 se câștigă la ${gameSettings.target || 10}`;
-          nextTextElement.append(goal);
-        }
+        const goalLineElement = document.getElementById('goalLine');
+        goalLineElement.hidden = !gameSettings.catan;
+        goalLineElement.textContent = `🏁 Se câștigă la ${gameSettings.target || 10} puncte`;
         resetDescriptionElement.textContent = `Se revine la ${playerNames[0]}, runda 1. Cronometrul nu se resetează.`;
         document.title = `Ture — ${playerNames.join(' · ')}`;
 

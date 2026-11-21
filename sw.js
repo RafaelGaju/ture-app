@@ -1,5 +1,5 @@
 // PWA offline cache — schimbă versiunea când actualizezi fișierele aplicației.
-const CACHE_VERSION = 'ture-app-pwa-v17';
+const CACHE_VERSION = 'ture-app-pwa-v18';
 const REQUIRED_OFFLINE_FILES = [
   './',
   './index.html',
