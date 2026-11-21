@@ -154,7 +154,7 @@
     .dice-result.is-shown{opacity:1;transform:none}
     .dice-result small{display:block;font-size:14px;font-weight:700;color:#aab3cf;margin-top:2px}
     .dice-close-hint{font-size:13px;color:#8e98b5;font-weight:650}
-    .robber-panel{display:none;width:min(calc(var(--uvw) * 95),600px);margin-top:6px;padding:16px 18px;border:1px solid #ff6a7d88;border-radius:18px;background:linear-gradient(160deg,#3a1624f2,#24101bf2);box-shadow:0 0 40px #ff3d5e33;text-align:left;animation:robber-in .35s ease-out}
+    .robber-panel{display:none;width:fit-content;max-width:min(calc(var(--uvw) * 95),600px);margin-top:6px;padding:16px 18px;border:1px solid #ff6a7d88;border-radius:18px;background:linear-gradient(160deg,#3a1624f2,#24101bf2);box-shadow:0 0 40px #ff3d5e33;text-align:left;animation:robber-in .35s ease-out}
     .robber-panel.is-shown{display:block}
     .robber-title{font-size:clamp(24px,calc(var(--uvw) * 7),30px);font-weight:900;color:#ff9bac;letter-spacing:-.02em;text-align:center}
     .robber-sub{font-size:15px;color:#f3c4cd;text-align:center;margin:2px 0 10px;font-weight:650}
@@ -229,7 +229,7 @@
     .sc-card{position:relative;overflow:hidden;background:#252b42;border:1px solid #363d5a;border-radius:18px;padding:12px 12px 12px 16px}
     .sc-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--player-color)}
     .sc-card.is-turn{border-color:#8c92fa;box-shadow:0 0 0 1px #8c92fa55,0 8px 24px #080b1b55}
-    .sc-card.is-leader .sc-name::after{content:" 👑";font-size:15px}
+    .sc-card.is-leader .sc-who::after{content:"LIDER";display:inline-block;margin-top:2px;padding:1px 7px;border-radius:6px;background:#ffe39722;color:#ffe397;font-size:10px;font-weight:900;letter-spacing:.1em}
     .sc-top{display:flex;align-items:center;gap:10px}
     .sc-avatar{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:15px;color:#101423;background:var(--player-color)}
     .sc-who{flex:1;min-width:0}
@@ -255,6 +255,9 @@
     .sc-done{display:block;width:100%;border:0;border-radius:14px;padding:14px;background:#ad9bff;color:#11152c;font-weight:900;font-size:17px}
     .winner-overlay{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#3b3418f7,#0b0a05fc)}
     .winner-overlay.is-open{display:flex}
+    .winner-overlay.is-midgame #winnerNewGame{display:none}
+    .winner-overlay.is-midgame #winnerClose{background:#ad9bff;color:#11152c}
+    .winner-overlay.is-midgame .winner-name{font-size:clamp(28px,calc(var(--uvw) * 8),44px)}
     .winner-kind{font-size:13px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#f1e6c0;opacity:.85}
     @media(max-width:430px){.winner-kind,.winner-overlay.is-epic .winner-kind{letter-spacing:.08em;font-size:13px}}
     .winner-stats{display:none;gap:10px;flex-wrap:wrap;justify-content:center}
@@ -1645,11 +1648,16 @@
       const winnerOverlayElement = document.getElementById('winnerOverlay');
       let catanScore = loadCatanScore();
       let announcedWinnerIndex = -1;
-      function freshCatanScore() { return { base: playerNames.map(() => 2), road: -1, army: -1 }; }
+      const shortCampaignPoints = 10;
+      function freshCatanScore() { return { base: playerNames.map(() => 2), road: -1, army: -1, shortWinner: -1, longWinner: -1 }; }
       function loadCatanScore() {
         try {
           const saved = JSON.parse(localStorage.getItem(catanScoreStorageKey));
-          if (saved && Array.isArray(saved.base) && saved.base.length === playerNames.length) return saved;
+          if (saved && Array.isArray(saved.base) && saved.base.length === playerNames.length) {
+            if (!Number.isInteger(saved.shortWinner)) saved.shortWinner = -1;
+            if (!Number.isInteger(saved.longWinner)) saved.longWinner = -1;
+            return saved;
+          }
         } catch (_) {}
         return freshCatanScore();
       }
@@ -1670,7 +1678,7 @@
         vp.textContent = `⭐ ${catanTotal(index)}`;
         if (index === bumpedPlayerIndex) { vp.classList.add('is-bumped'); bumpedPlayerIndex = -1; }
         playerElement.append(vp);
-        const badges = (catanScore.road === index ? '🛤️' : '') + (catanScore.army === index ? '⚔️' : '');
+        const badges = (catanScore.longWinner === index ? '👑' : '') + (catanScore.shortWinner === index ? '🏆' : '') + (catanScore.road === index ? '🛤️' : '') + (catanScore.army === index ? '⚔️' : '');
         if (badges) vp.textContent += ` ${badges}`;
         playerElement.setAttribute('role', 'button');
         playerElement.setAttribute('aria-label', `${playerNames[index]}: ${catanTotal(index)} puncte. Atinge pentru scor.`);
@@ -1695,7 +1703,10 @@
           const top = document.createElement('div'); top.className = 'sc-top';
           const avatar = document.createElement('span'); avatar.className = 'sc-avatar'; avatar.textContent = name.charAt(0).toLocaleUpperCase('ro-RO');
           const who = document.createElement('div'); who.className = 'sc-who';
-          const nameEl = document.createElement('div'); nameEl.className = 'sc-name'; nameEl.textContent = name;
+          const nameEl = document.createElement('div'); nameEl.className = 'sc-name';
+          const honours = (catanScore.longWinner === index ? '👑' : '') + (catanScore.shortWinner === index ? '🏆' : '');
+          nameEl.textContent = honours ? `${name} ${honours}` : name;
+          if (honours) nameEl.title = [catanScore.longWinner === index ? 'A câștigat campania lungă' : '', catanScore.shortWinner === index ? 'A câștigat campania scurtă' : ''].filter(Boolean).join(' · ');
           who.append(nameEl);
           if (index === turnIndex) { const turn = document.createElement('div'); turn.className = 'sc-turn'; turn.textContent = 'la rând'; who.append(turn); }
           const totalEl = document.createElement('div'); totalEl.className = 'sc-total';
@@ -1889,6 +1900,22 @@
         chord.forEach(([f, d]) => note(f, d, 1.2, 0.09, 'sine'));
       }
       function checkForCatanWinner() {
+        // Trofeul campaniei scurte: primul care atinge 10 puncte îl primește o singură dată și îl păstrează,
+        // chiar dacă pierde apoi puncte (ex. cel mai lung drum). Nu se acordă a doua oară.
+        if (catanScore.shortWinner === -1) {
+          const reached = playerNames.map((_, i) => i).filter(i => catanTotal(i) >= shortCampaignPoints);
+          if (reached.length) {
+            const activeIndex = completedTurns % playerNames.length;
+            catanScore.shortWinner = reached.includes(activeIndex) ? activeIndex : reached.sort((a, b) => catanTotal(b) - catanTotal(a))[0];
+            saveCatanScore();
+            displayCurrentPlayerAndRound();
+            if (scoreDialog.open) renderScoreRows();
+            if (winningPoints() > shortCampaignPoints && catanTotal(catanScore.shortWinner) < winningPoints()) {
+              showShortCampaignWin(catanScore.shortWinner);
+              return;
+            }
+          }
+        }
         const winnerIndex = playerNames.findIndex((_, i) => catanTotal(i) >= winningPoints());
         if (winnerIndex === -1) { announcedWinnerIndex = -1; return; }
         if (winnerIndex === announcedWinnerIndex) return;
@@ -1899,6 +1926,11 @@
         winnerNameElement.style.setProperty('--player-color', playerColorPalette[winnerIndex]);
         const round = Math.floor(completedTurns / playerNames.length) + 1;
         const longCampaign = winningPoints() > 10;
+        if (longCampaign && catanScore.longWinner === -1) {
+          catanScore.longWinner = winnerIndex; // coroană permanentă pentru campania lungă
+          saveCatanScore();
+          displayCurrentPlayerAndRound();
+        }
         document.getElementById('winnerSub').textContent = `${catanTotal(winnerIndex)} puncte de victorie · runda ${round}`;
         document.getElementById('winnerKind').textContent = longCampaign ? `⚜️ Campanie lungă · ${winningPoints()} puncte ⚜️` : `Campanie scurtă · ${winningPoints()} puncte`;
         document.getElementById('winnerTrophy').textContent = longCampaign ? '👑' : '🏆';
@@ -1915,6 +1947,8 @@
           });
         }
         winnerOverlayElement.classList.toggle('is-epic', longCampaign);
+        winnerOverlayElement.classList.remove('is-midgame');
+        document.getElementById('winnerClose').textContent = 'Continuăm (greșeală)';
         winnerOverlayElement.classList.add('is-open');
         if (longCampaign) {
           launchConfetti(); window.setTimeout(launchConfetti, 1400); window.setTimeout(launchConfetti, 2800);
@@ -1926,6 +1960,22 @@
           playVictoryFanfare();
           if (typeof navigator.vibrate === 'function') navigator.vibrate([100, 60, 100, 60, 300]);
         }
+      }
+      function showShortCampaignWin(index) {
+        if (scoreDialog.open) scoreDialog.close();
+        const nameElement = document.getElementById('winnerName');
+        nameElement.textContent = `${playerNames[index]} a câștigat campania scurtă!`;
+        nameElement.style.setProperty('--player-color', playerColorPalette[index]);
+        document.getElementById('winnerKind').textContent = `Campanie scurtă · ${shortCampaignPoints} puncte`;
+        document.getElementById('winnerTrophy').textContent = '🏆';
+        document.getElementById('winnerSub').textContent = `Trofeul rămâne la ${playerNames[index]}. Jocul continuă până la ${winningPoints()} puncte.`;
+        document.getElementById('winnerStats').replaceChildren();
+        document.getElementById('winnerClose').textContent = 'Continuăm jocul';
+        winnerOverlayElement.classList.remove('is-epic');
+        winnerOverlayElement.classList.add('is-open', 'is-midgame');
+        launchConfetti();
+        playVictoryFanfare();
+        if (typeof navigator.vibrate === 'function') navigator.vibrate([100, 60, 100, 60, 300]);
       }
       function startNewGame() {
         resetCatanScore();
@@ -1962,7 +2012,13 @@
       playersContainerElement.addEventListener('click', () => { if (gameSettings.catan) openScoreDialog(); });
       document.getElementById('closeScore').addEventListener('click', () => scoreDialog.close());
       document.getElementById('winnerNewGame').addEventListener('click', () => { winnerOverlayElement.classList.remove('is-open'); startNewGame(); });
-      document.getElementById('winnerClose').addEventListener('click', () => winnerOverlayElement.classList.remove('is-open'));
+      document.getElementById('winnerClose').addEventListener('click', () => {
+        winnerOverlayElement.classList.remove('is-open');
+        if (winnerOverlayElement.classList.contains('is-midgame')) {
+          winnerOverlayElement.classList.remove('is-midgame');
+          window.setTimeout(checkForCatanWinner, 50); // dacă a atins deodată și ținta finală
+        }
+      });
 
       document.getElementById('diceSoundPreview').addEventListener('click', () => {
         activateExpirationSoundAfterUserInteraction();
