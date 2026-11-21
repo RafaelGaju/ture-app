@@ -380,6 +380,9 @@
       .players.count-5{grid-template-columns:repeat(6,minmax(0,1fr))}
       .players.count-5 .player{grid-column:span 2}
       .players.count-5 .player:nth-child(4){grid-column:2 / span 2}
+      /* Un singur rând de jucători: puțin mai mult spațiu între butoanele de scor și butonul mare */
+      main:has(.players:not(.count-5):not(.count-6)) .end{margin-top:22px}
+      main:has(.players:not(.count-5):not(.count-6)) .quick-score{margin-top:6px}
       .quick-score{grid-column:2;grid-row:3;margin:0 0 14px}
       .quick-score button{min-height:clamp(42px,calc(var(--uvh) * 7),58px);font-size:clamp(11.5px,calc(var(--uvw) * 1.4),14px)}
       .quick-score button b{display:block;font-size:clamp(16px,calc(var(--uvw) * 2),22px)}
