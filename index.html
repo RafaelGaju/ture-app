@@ -223,24 +223,59 @@
     @keyframes confetti-fall{to{transform:translateY(110vh) rotate(720deg)}}
     .reset-option{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:14px;font-weight:700;color:#dfe4f8}
     .reset-option input{width:20px;height:20px;accent-color:#aa9bff}
-    .quick-score{display:none;align-items:center;gap:6px;margin:-10px 0 14px}
+    .quick-score{display:none;align-items:center;gap:5px;margin:-10px 0 14px}
     .quick-score.is-visible{display:flex}
-    .quick-score button{flex:1;min-width:0;min-height:46px;border:1px solid #3b4262;border-radius:13px;background:#1b2135;color:#e7eafa;font-weight:800;font-size:13px;padding:4px 2px;line-height:1.15;transition:transform .08s,background .15s}
+    .quick-score button{flex:1;min-width:0;min-height:46px;border:1px solid #3b4262;border-radius:13px;background:#1b2135;color:#e7eafa;font-weight:800;font-size:11.5px;padding:4px 1px;line-height:1.15;transition:transform .08s,background .15s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .quick-score .qs-award[aria-pressed="true"]{border-color:#ffe397;background:#3b3620;color:#ffe397}
     .quick-score button:active{transform:scale(.95);background:#2a3049}
     .quick-score button b{display:block;font-size:17px}
-    .quick-score .qs-undo{flex:0 0 46px;color:#aab3cf;font-size:18px}
+    .quick-score .qs-undo{flex:0 0 40px;color:#aab3cf;font-size:18px}
     .quick-score .qs-undo:disabled{opacity:.3}
     .player .vp.is-bumped{animation:vp-bump .5s ease-out}
     @keyframes vp-bump{0%{transform:scale(1)}35%{transform:scale(1.6);color:#fff}100%{transform:scale(1)}}
-    .score-toast{position:fixed;z-index:25;left:50%;top:max(16px,env(safe-area-inset-top));transform:translate(-50%,-140%);padding:10px 16px;border-radius:14px;background:#3b3620;border:1px solid #ffe39788;color:#ffe397;font-weight:850;font-size:15px;box-shadow:0 10px 30px #0008;transition:transform .25s;white-space:nowrap}
-    .score-toast.is-shown{transform:translate(-50%,0)}
-    @media(max-height:680px){.quick-score{margin:-4px 0 10px}.quick-score button{min-height:40px}.quick-score button b{display:inline;font-size:14px;margin-right:3px}}
+    .score-toast{position:fixed;z-index:25;left:50%;top:max(16px,env(safe-area-inset-top));transform:translate(-50%,calc(-100% - 60px));visibility:hidden;padding:10px 16px;border-radius:14px;background:#3b3620;border:1px solid #ffe39788;color:#ffe397;font-weight:850;font-size:15px;box-shadow:0 10px 30px #0008;transition:transform .25s,visibility 0s .25s;white-space:nowrap}
+    .score-toast.is-shown{transform:translate(-50%,0);visibility:visible;transition:transform .25s}
+    @media(max-height:680px){.quick-score{margin:-4px 0 10px}.quick-score button{min-height:40px}.quick-score button b{font-size:15px}}
     @media(max-height:680px){main:has(.quick-score.is-visible) .end{min-height:112px;padding:14px}main:has(.quick-score.is-visible) .players{margin-bottom:12px}}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     @media(prefers-reduced-motion:reduce){.die-wrap.is-rolling,.die-wrap.is-rolling::after{animation:none}.die{transition-duration:.35s}}
     @media(max-height:680px){.players{margin-bottom:12px}.player{min-height:75px;padding:8px 4px;gap:5px}.center{min-height:215px;padding:2px 0}.end{min-height:clamp(150px,25svh,200px)}.actions{padding:10px 0 0}}
     @media(max-height:560px){.center{min-height:185px}.timer-frame{width:min(54vw,160px)}.name{font-size:42px}.timer-readout{font-size:22px}.timer-warning{font-size:9px;bottom:11%}.subtitle,.hint{font-size:12px}.players{margin-bottom:10px}.player{min-height:64px}.end{min-height:125px;padding:16px}.actions{padding-top:4px}}
+    /* ===== Landscape (tabletă / telefon întors): două coloane ===== */
+    @media (orientation: landscape) and (min-width: 700px){
+      main{width:min(100%,1280px);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;column-gap:clamp(20px,4vw,56px);align-content:stretch;padding:max(16px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
+      header{grid-column:1 / -1}
+      .center{grid-column:1;grid-row:2 / span 4;min-height:0;padding:8px 0}
+      .timer-frame{width:min(40vw,62svh,440px)}
+      .name{font-size:clamp(46px,min(7vw,11svh),92px)}
+      .name.is-long{font-size:clamp(32px,min(5vw,8svh),64px)}
+      .name.is-very-long{font-size:clamp(24px,min(3.8vw,6svh),46px)}
+      .timer-readout{font-size:clamp(24px,min(3.4vw,5.5svh),40px)}
+      .players{grid-column:2;grid-row:2;margin:clamp(8px,3svh,28px) 0 14px}
+      .players.has-many{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .quick-score{grid-column:2;grid-row:3;margin:0 0 14px}
+      .quick-score button{min-height:clamp(42px,7svh,58px);font-size:clamp(11.5px,1.4vw,14px)}
+      .quick-score button b{display:block;font-size:clamp(16px,2vw,22px)}
+      .end{grid-column:2;grid-row:4;min-height:0;height:100%;max-height:340px;align-self:stretch;font-size:clamp(28px,min(4vw,7svh),44px)}
+      .end.is-dice .end-main{font-size:clamp(24px,min(3.4vw,6svh),40px)}
+      .actions{grid-column:2;grid-row:5;padding:12px 0 2px}
+    }
+    /* Telefon în landscape: înălțime mică */
+    @media (orientation: landscape) and (min-width: 700px) and (max-height: 500px){
+      .subtitle,.hint{font-size:12px}
+      .timer-frame{width:min(36vw,58svh)}
+      .dice-strip{margin-top:6px;min-height:36px}
+      .player{min-height:56px;padding:5px 4px;gap:3px}
+      .players.has-many .player{min-height:50px}
+      .circle{width:22px;height:22px;font-size:11px}
+      .players{margin:6px 0 8px}
+      .quick-score{margin-bottom:8px}
+      .quick-score button{min-height:38px}
+      .quick-score button b{display:inline;font-size:14px;margin-right:2px}
+      .actions{padding-top:4px}
+      .end{padding:10px}
+    }
   </style>
 </head>
 <body>
@@ -280,9 +315,11 @@
     </section>
     <div class="players" id="players" aria-label="Jucători"></div>
     <div class="quick-score" id="quickScore" role="group" aria-label="Scor rapid pentru jucătorul curent">
-      <button type="button" data-label="așezare"><b>🏠</b>Așezare +1</button>
-      <button type="button" data-label="oraș"><b>🏰</b>Oraș +1</button>
-      <button type="button" data-label="carte de punct"><b>🃏</b>Punct +1</button>
+      <button type="button" data-label="așezare" aria-label="Așezare, plus 1 punct"><b>🏠</b>Așezare</button>
+      <button type="button" data-label="oraș" aria-label="Oraș, plus 1 punct"><b>🏰</b>Oraș</button>
+      <button type="button" data-label="carte de punct" aria-label="Carte de punct, plus 1"><b>🃏</b>Punct</button>
+      <button type="button" data-award="road" class="qs-award" aria-label="Cel mai lung drum la jucătorul curent"><b>🛣️</b>Drum</button>
+      <button type="button" data-award="army" class="qs-award" aria-label="Cea mai mare armată la jucătorul curent"><b>⚔️</b>Armată</button>
       <button type="button" class="qs-undo" id="quickScoreUndo" aria-label="Anulează ultimul punct" disabled>↶</button>
     </div>
     <button class="end" id="endTurn" type="button"><span class="end-text"><span class="end-main" id="endTurnMain">Încheie tura</span><span class="end-sub" id="endTurnSub"></span></span><svg id="endTurnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button>
@@ -896,7 +933,11 @@
       }
       function dieSizeForCount(count) {
         const base = count === 1 ? 128 : count === 2 ? 112 : count <= 4 ? 92 : 78;
-        return Math.round(Math.min(base, window.innerWidth * (count === 1 ? 0.38 : count === 2 ? 0.3 : 0.24)));
+        const shortSide = Math.min(window.innerWidth, window.innerHeight);
+        const scale = shortSide >= 700 ? 1.6 : shortSide >= 560 ? 1.3 : 1; // tabletă
+        const widthLimit = window.innerWidth * (count === 1 ? 0.38 : count === 2 ? 0.3 : count <= 4 ? 0.24 : 0.2);
+        const heightLimit = window.innerHeight * (count <= 3 ? 0.26 : 0.2);
+        return Math.round(Math.min(base * scale, widthLimit, heightLimit));
       }
       function buildDiceStage(count) {
         diceStageElement.replaceChildren();
@@ -1365,6 +1406,19 @@
         scoreToastTimeoutId = window.setTimeout(() => scoreToastElement.classList.remove('is-shown'), 1600);
       }
       quickScoreElement.addEventListener('click', event => {
+        const awardButton = event.target.closest('button[data-award]');
+        if (awardButton) {
+          const index = completedTurns % playerNames.length;
+          const key = awardButton.dataset.award;
+          const awardName = key === 'road' ? '🛣️ Cel mai lung drum' : '⚔️ Cea mai mare armată';
+          const previousHolder = catanScore[key];
+          bumpedPlayerIndex = index;
+          changeCatanScore(() => { catanScore[key] = previousHolder === index ? -1 : index; });
+          if (previousHolder === index) showScoreToast(`${awardName}: scos de la ${playerNames[index]}`);
+          else showScoreToast(`${awardName} → ${playerNames[index]}${previousHolder >= 0 ? ` (de la ${playerNames[previousHolder]})` : ''} · ⭐ ${catanTotal(index)}`);
+          if (typeof navigator.vibrate === 'function') navigator.vibrate(25);
+          return;
+        }
         const button = event.target.closest('button[data-label]');
         if (!button) return;
         const index = completedTurns % playerNames.length;
@@ -1451,6 +1505,10 @@
         openScoreButton.hidden = !gameSettings.catan;
         quickScoreElement.classList.toggle('is-visible', gameSettings.catan);
         quickScoreUndoButton.disabled = !scoreUndoStack.length;
+        const activeIndex = completedTurns % playerNames.length;
+        quickScoreElement.querySelectorAll('[data-award]').forEach(button => {
+          button.setAttribute('aria-pressed', String(catanScore[button.dataset.award] === activeIndex));
+        });
         playersContainerElement.classList.toggle('is-scoring', gameSettings.catan);
         document.getElementById('resetExtrasLabel').hidden = !(diceSettings.enabled || gameSettings.catan);
       }

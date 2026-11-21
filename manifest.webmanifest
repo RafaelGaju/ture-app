@@ -37,5 +37,5 @@
     "fullscreen",
     "standalone"
   ],
-  "orientation": "portrait"
+  "orientation": "any"
 }
