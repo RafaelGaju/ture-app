@@ -262,6 +262,16 @@
     .winner-overlay.is-midgame .winner-name{font-size:clamp(28px,calc(var(--uvw) * 8),44px)}
     .winner-kind{font-size:13px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#f1e6c0;opacity:.85}
     @media(max-width:430px){.winner-kind,.winner-overlay.is-epic .winner-kind{letter-spacing:.08em;font-size:13px}}
+    .winner-podium{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:2px;width:100%;max-width:560px}
+    .winner-podium:empty{display:none}
+    .podium-place{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto;max-width:calc(50% - 4px);padding:8px 12px 8px 9px;border-radius:14px;background:#00000059;border:1px solid #ffffff1f;border-left:4px solid var(--player-color)}
+    .podium-medal{font-size:24px;line-height:1}
+    .podium-text{display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1.15}
+    .podium-name{font-weight:850;font-size:15px;color:#f6f7ff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .podium-points{font-size:12px;font-weight:700;color:#cfc6a8;font-variant-numeric:tabular-nums;white-space:nowrap}
+    @media(max-width:380px){.podium-medal{font-size:20px}.podium-name{font-size:14px}.podium-points{font-size:11px}}
+    .winner-overlay.is-epic .winner-podium{animation:kind-in .9s .8s ease-out both}
+    .winner-overlay.is-midgame .winner-podium{display:none}
     .winner-stats{display:none;gap:10px;flex-wrap:wrap;justify-content:center}
     .winner-stats span{background:#0006;border:1px solid #ffe39744;border-radius:12px;padding:8px 12px;color:#ffe397;font-weight:800;font-size:14px}
     /* Campanie lungă: varianta epică */
@@ -504,6 +514,7 @@
     <div class="winner-trophy" id="winnerTrophy">🏆</div>
     <div class="winner-name" id="winnerName"></div>
     <div class="winner-sub" id="winnerSub"></div>
+    <div class="winner-podium" id="winnerPodium"></div>
     <div class="winner-stats" id="winnerStats"></div>
     <div class="winner-actions">
       <button type="button" class="confirm" id="winnerNewGame">Joc nou</button>
@@ -1996,13 +2007,15 @@
         if (longCampaign) {
           const sevens = diceHistory.filter(e => e.v.length === 2 && e.v[0] + e.v[1] === 7).length;
           const rollsByWinner = diceHistory.filter(e => e.p === winnerIndex).length;
-          [`🎲 ${diceHistory.length} aruncări`, `🥷 ${sevens} hoți`, `🔁 ${round} runde`,
+          const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+          [`🎲 ${plural(diceHistory.length, 'aruncare', 'aruncări')}`, `🥷 ${plural(sevens, 'hoț', 'hoți')}`, `🔁 ${plural(round, 'rundă', 'runde')}`,
            catanScore.road === winnerIndex ? '🛤️ Cel mai lung drum' : null,
            catanScore.army === winnerIndex ? '⚔️ Cea mai mare armată' : null,
            rollsByWinner ? null : null].filter(Boolean).forEach(text => {
             const chip = document.createElement('span'); chip.textContent = text; stats.append(chip);
           });
         }
+        renderWinnerPodium(winnerIndex);
         winnerOverlayElement.classList.toggle('is-epic', longCampaign);
         winnerOverlayElement.classList.remove('is-midgame');
         document.getElementById('winnerClose').textContent = 'Continuăm (greșeală)';
@@ -2017,6 +2030,32 @@
           playVictoryFanfare();
           if (typeof navigator.vibrate === 'function') navigator.vibrate([100, 60, 100, 60, 300]);
         }
+      }
+      // Locurile 2 și 3 (după punctaj; la egalitate de puncte, același loc).
+      function renderWinnerPodium(winnerIndex) {
+        const podium = document.getElementById('winnerPodium');
+        podium.replaceChildren();
+        const others = playerNames.map((name, index) => ({ name, index, total: catanTotal(index) }))
+          .filter(p => p.index !== winnerIndex)
+          .sort((a, b) => b.total - a.total);
+        let place = 1, previousTotal = null;
+        others.forEach((player, position) => {
+          if (player.total !== previousTotal) place = position + 2;
+          previousTotal = player.total;
+          if (place > 3) return;
+          const card = document.createElement('div');
+          card.className = 'podium-place';
+          card.style.setProperty('--player-color', playerColorPalette[player.index]);
+          const medal = document.createElement('span'); medal.className = 'podium-medal'; medal.textContent = place === 2 ? '🥈' : '🥉';
+          const text = document.createElement('span'); text.className = 'podium-text';
+          const name = document.createElement('span'); name.className = 'podium-name'; name.textContent = player.name;
+          const points = document.createElement('span'); points.className = 'podium-points';
+          points.textContent = `Locul ${place} · ${player.total} ${player.total === 1 ? 'punct' : 'puncte'}`;
+          text.append(name, points);
+          card.append(medal, text);
+          card.setAttribute('aria-label', `Locul ${place}: ${player.name}, ${player.total} puncte`);
+          podium.append(card);
+        });
       }
       function showShortCampaignWin(index) {
         if (scoreDialog.open) scoreDialog.close();
