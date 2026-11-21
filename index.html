@@ -155,8 +155,9 @@
     .dice-result.is-shown{opacity:1;transform:none}
     .dice-result small{display:block;font-size:14px;font-weight:700;color:#aab3cf;margin-top:2px}
     .dice-close-hint{font-size:13px;color:#8e98b5;font-weight:650}
-    .robber-panel{display:none;width:fit-content;max-width:min(calc(var(--uvw) * 95),600px);margin-top:6px;padding:16px 18px;border:1px solid #ff6a7d88;border-radius:18px;background:linear-gradient(160deg,#3a1624f2,#24101bf2);box-shadow:0 0 40px #ff3d5e33;text-align:left;animation:robber-in .35s ease-out}
-    .robber-panel.is-shown{display:block}
+    .robber-panel{display:none;width:fit-content;max-width:min(calc(var(--uvw) * 95),600px);margin-top:6px;padding:16px 18px;border:1px solid #ff6a7d88;border-radius:18px;background:linear-gradient(160deg,#3a1624f2,#24101bf2);box-shadow:0 0 40px #ff3d5e33;text-align:left}
+    .robber-panel.is-reserved{display:block;visibility:hidden}
+    .robber-panel.is-shown{display:block;visibility:visible;animation:robber-in .35s ease-out}
     .robber-title{font-size:clamp(24px,calc(var(--uvw) * 7),30px);font-weight:900;color:#ff9bac;letter-spacing:-.02em;text-align:center}
     .robber-sub{font-size:15px;color:#f3c4cd;text-align:center;margin:2px 0 10px;font-weight:650}
     .robber-steps{list-style:none;margin:4px 0 0;padding:0;color:#fbe9ec;font-weight:650;display:grid;gap:8px}
@@ -1382,10 +1383,20 @@
         diceWhoElement.style.setProperty('--player-color', playerColorPalette[currentPlayerIndex]);
         diceResultElement.classList.remove('is-shown');
         diceResultElement.textContent = '';
-        robberPanelElement.classList.remove('is-shown');
+        robberPanelElement.classList.remove('is-shown', 'is-reserved');
         robberPanelElement.replaceChildren();
         diceOverlayElement.classList.remove('is-robber');
         const dice = buildDiceStage(count);
+        // Rezultatul și (dacă e 7 la Catan) cardul hoțului se pun de acum, invizibile, ca să nu se miște nimic la final.
+        const total = values.reduce((a, b) => a + b, 0);
+        diceResultElement.append(count > 1 ? `Total: ${total}` : `${total}`);
+        if (count > 1) {
+          const detail = document.createElement('small');
+          detail.textContent = values.join(' + ');
+          diceResultElement.append(detail);
+        }
+        const robberRoll = rollIsCatanRobber(values);
+        if (robberRoll) prepareCatanRobberInstructions(playerNames[currentPlayerIndex]);
         diceOverlayElement.classList.add('is-open');
         diceOverlayElement.setAttribute('aria-hidden', 'false');
         diceOverlayClosableAt = Date.now() + 1350 + count * 45; // după ce apare rezultatul
@@ -1413,17 +1424,9 @@
         playDiceRattleSound();
         if (typeof navigator.vibrate === 'function') navigator.vibrate([18, 60, 14, 50, 10]);
         diceRevealTimeoutId = window.setTimeout(() => {
-          const total = values.reduce((a, b) => a + b, 0);
-          diceResultElement.innerHTML = '';
-          diceResultElement.append(count > 1 ? `Total: ${total}` : `${total}`);
-          if (count > 1) {
-            const detail = document.createElement('small');
-            detail.textContent = values.join(' + ');
-            diceResultElement.append(detail);
-          }
           diceResultElement.classList.add('is-shown');
           renderDiceStrip();
-          if (rollIsCatanRobber(values)) showCatanRobberInstructions(playerNames[currentPlayerIndex]);
+          if (robberRoll) revealCatanRobberInstructions();
           else diceAutoCloseTimeoutId = window.setTimeout(closeDiceOverlay, 2600);
         }, 1350 + count * 45);
       }
@@ -1481,7 +1484,8 @@
           oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
         });
       }
-      function showCatanRobberInstructions(playerName) {
+      // Construit de la începutul aruncării (invizibil), ca să-și rezerve locul și zarurile să nu sară la final.
+      function prepareCatanRobberInstructions(playerName) {
         robberPanelElement.replaceChildren();
         const title = document.createElement('div');
         title.className = 'robber-title';
@@ -1513,13 +1517,18 @@
         ok.className = 'robber-ok';
         ok.textContent = 'Am înțeles · 30';
         robberPanelElement.append(title, sub, steps, ok);
-        robberPanelElement.classList.add('is-shown');
+        robberPanelElement.classList.add('is-reserved');
         // Fiecare pas pe un singur rând: micșorează textul doar cât e nevoie.
         robberPanelElement.querySelectorAll('.robber-steps li').forEach(item => {
           let size = 18;
           item.style.fontSize = `${size}px`;
           while (item.scrollWidth > item.clientWidth && size > 11) { size -= 0.5; item.style.fontSize = `${size}px`; }
         });
+      }
+      function revealCatanRobberInstructions() {
+        const ok = robberPanelElement.querySelector('.robber-ok');
+        robberPanelElement.classList.remove('is-reserved');
+        robberPanelElement.classList.add('is-shown');
         diceOverlayElement.classList.add('is-robber');
         playRobberSound();
         // Se închide singur după 30 s (ca și cum s-ar apăsa „Am înțeles”); tura NU trece mai departe.
