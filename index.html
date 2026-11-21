@@ -79,7 +79,8 @@
     .player span:last-child{font-size:13px;font-weight:750}
     button{font:inherit;cursor:pointer;touch-action:manipulation}
     .end{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;border:0;border-radius:25px;min-height:clamp(180px,calc(var(--uvh) * 26),235px);padding:30px 18px;background:linear-gradient(105deg,#8f89ff,#b18eff);box-shadow:0 13px 34px #7166f93e;color:#11152c;font-size:clamp(30px,calc(var(--uvw) * 8),38px);font-weight:900;letter-spacing:-.03em;transition:transform .10s,filter .10s}
-    .end:active{transform:scale(.98);filter:brightness(1.07)}
+    .end:active,.end.is-pressed{transform:scale(.98);filter:brightness(1.1)}
+    .end{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
     .end svg{width:40px;height:40px;flex-shrink:0}
     .actions{display:flex;justify-content:center;flex-wrap:wrap;gap:2px 6px;padding:23px 0 4px}.actions .small{padding:10px 8px}
     .small{border:0;background:transparent;color:#adb6d2;padding:10px;font-size:14px;font-weight:650;border-radius:10px}
@@ -2118,13 +2119,49 @@
       playerCountSelectElement.addEventListener('change', renderEditablePlayerNameInputs);
       timerDisabledCheckboxElement.addEventListener('change', updateTimerDurationInputAvailability);
       playerSettingsForm.addEventListener('submit', saveConfiguredPlayersFromSettingsForm);
-      endTurnButton.addEventListener('click', () => {
+      // Buton „sensibil”: pe touch, apăsarea contează chiar dacă degetul alunecă puțin
+      // (browserul ar anula altfel „click”-ul, crezând că începe un scroll).
+      let lastEndTurnAt = 0;
+      let endTurnPress = null;
+      function endTurnNow() {
+        const now = Date.now();
+        if (now - lastEndTurnAt < 450) return; // fără dublă apăsare accidentală
+        lastEndTurnAt = now;
         updateCompletedTurnsAndRefresh(completedTurns + 1);
         startNewTimerOnlyAfterEndingTurn();
         renderElapsedCounters(true);
         if (diceSettings.enabled) rollDiceWithAnimation();
         else playShortTurnChangeFeedback();
+      }
+      endTurnButton.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        endTurnPress = { id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY };
+        endTurnButton.classList.add('is-pressed');
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(12);
       });
+      window.addEventListener('pointermove', event => {
+        if (endTurnPress && event.pointerId === endTurnPress.id) { endTurnPress.lastX = event.clientX; endTurnPress.lastY = event.clientY; }
+      }, { passive: true });
+      const finishEndTurnPress = (event, cancelled) => {
+        if (!endTurnPress || event.pointerId !== endTurnPress.id) return;
+        const press = endTurnPress;
+        endTurnPress = null;
+        endTurnButton.classList.remove('is-pressed');
+        if (cancelled && event.type === 'pointercancel') {
+          // Browserul a preluat gestul ca scroll; acceptăm apăsarea dacă degetul abia s-a mișcat.
+          const moved = Math.hypot(press.lastX - press.x, press.lastY - press.y);
+          if (moved < 45) endTurnNow();
+          return;
+        }
+        const box = endTurnButton.getBoundingClientRect();
+        const margin = 24; // toleranță în jurul butonului
+        if (event.clientX >= box.left - margin && event.clientX <= box.right + margin &&
+            event.clientY >= box.top - margin && event.clientY <= box.bottom + margin) endTurnNow();
+      };
+      window.addEventListener('pointerup', event => finishEndTurnPress(event, false));
+      window.addEventListener('pointercancel', event => finishEndTurnPress(event, true));
+      // Tastatură / cititoare de ecran (click fără pointer) — dublura e filtrată de endTurnNow.
+      endTurnButton.addEventListener('click', event => { if (event.detail === 0) endTurnNow(); });
       undoButton.addEventListener('click', () => {
         if (completedTurns > 0) updateCompletedTurnsAndRefresh(completedTurns - 1);
       });
