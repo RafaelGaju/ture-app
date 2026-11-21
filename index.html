@@ -284,6 +284,9 @@
     header.has-goal .eyebrow{display:none}
     header.has-goal .header-right{flex:1;justify-content:space-between}
     @media(max-width:410px){.goal-line{padding:8px 9px;font-size:12px}}
+    header{position:relative}
+    header.goal-centered .goal-line{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+    header.goal-centered.has-goal .header-right{justify-content:flex-end}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     .settings-range{width:100%;accent-color:#aa9bff;height:32px}
@@ -331,7 +334,6 @@
       header .eyebrow{grid-column:1}
       header.has-goal .eyebrow{display:block}
       header .header-right{grid-column:2;margin-left:0;justify-content:flex-end}
-      header.has-goal .header-right{justify-content:space-between}
       .goal-long{display:inline}
       .goal-short{display:none}
       .center{grid-column:1;grid-row:2 / span 4;min-height:0;padding:8px 0}
@@ -994,6 +996,7 @@
         goalLineElement.querySelector('.goal-long').textContent = `🏁 Se câștigă la ${gameSettings.target || 10} puncte`;
         goalLineElement.querySelector('.goal-short').textContent = `🏁 Până la ${gameSettings.target || 10}`;
         document.querySelector('header').classList.toggle('has-goal', gameSettings.catan);
+        updateGoalPlacement();
         resetDescriptionElement.textContent = `Se revine la ${playerNames[0]}, runda 1. Cronometrul nu se resetează.`;
         document.title = `Ture — ${playerNames.join(' · ')}`;
 
@@ -1019,6 +1022,32 @@
         updateEndTurnButtonLabel();
         updateExtraActionButtons();
       }
+      // Centrează „Se câștigă la…” în mijlocul ecranului doar dacă încape fără să atingă butoanele.
+      function updateGoalPlacement() {
+        const header = document.querySelector('header');
+        const goal = document.getElementById('goalLine');
+        header.classList.remove('goal-centered');
+        if (goal.hidden) return;
+        const longText = goal.querySelector('.goal-long'), shortText = goal.querySelector('.goal-short');
+        const tryCentered = (useLong) => {
+          longText.style.display = useLong ? 'inline' : 'none';
+          shortText.style.display = useLong ? 'none' : 'inline';
+          header.classList.add('goal-centered');
+          const headerBox = header.getBoundingClientRect();
+          const goalBox = goal.getBoundingClientRect();
+          const actionsBox = header.querySelector('.header-actions').getBoundingClientRect();
+          const eyebrow = header.querySelector('.eyebrow');
+          let eyebrowRight = headerBox.left;
+          if (eyebrow.offsetParent) { const range = document.createRange(); range.selectNodeContents(eyebrow); eyebrowRight = range.getBoundingClientRect().right; }
+          const fits = goalBox.right + 10 <= actionsBox.left && goalBox.left - 10 >= eyebrowRight;
+          if (!fits) header.classList.remove('goal-centered');
+          return fits;
+        };
+        if (tryCentered(true) || tryCentered(false)) return;
+        // Nu încape centrat: rămâne în stânga, cu textul scurt.
+        longText.style.display = 'none'; shortText.style.display = 'inline';
+      }
+      window.addEventListener('resize', () => updateGoalPlacement());
       function updateCompletedTurnsAndRefresh(nextCompletedTurns) {
         completedTurns = nextCompletedTurns;
         saveCompletedTurnCount();
