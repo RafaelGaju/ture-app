@@ -1060,56 +1060,68 @@
         if (!audioContext || audioContext.state !== 'running') return;
         const now = audioContext.currentTime + 0.005;
         const extraDice = Math.min(diceSettings.count, 4) - 1;
-        // Un clic = zgomot scurt filtrat (zar pe zar / zar pe masă).
-        function click(at, loudness, length, centerFrequency) {
+        // Lanț comun: volum general redus + filtru trece-jos pentru un sunet cald, nu ascuțit.
+        const master = audioContext.createGain();
+        master.gain.value = 0.55;
+        const warmth = audioContext.createBiquadFilter();
+        warmth.type = 'lowpass';
+        warmth.frequency.value = 2600;
+        warmth.Q.value = 0.5;
+        master.connect(warmth); warmth.connect(audioContext.destination);
+        window.setTimeout(() => { master.disconnect(); warmth.disconnect(); }, 2200);
+        // „Toc” moale de plastic/lemn: zgomot cu atac lin și stingere rapidă.
+        function tock(at, loudness, length, centerFrequency) {
           const sampleCount = Math.floor(audioContext.sampleRate * length);
+          const attackSamples = Math.floor(audioContext.sampleRate * 0.0025);
           const buffer = audioContext.createBuffer(1, sampleCount, audioContext.sampleRate);
           const data = buffer.getChannelData(0);
-          for (let i = 0; i < sampleCount; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / sampleCount, 2.4);
+          for (let i = 0; i < sampleCount; i++) {
+            const attack = i < attackSamples ? i / attackSamples : 1;
+            data[i] = (Math.random() * 2 - 1) * attack * Math.pow(1 - i / sampleCount, 3.2);
+          }
           const source = audioContext.createBufferSource();
           source.buffer = buffer;
-          const filter = audioContext.createBiquadFilter();
-          filter.type = 'bandpass';
-          filter.frequency.value = centerFrequency;
-          filter.Q.value = 1.6;
+          const body = audioContext.createBiquadFilter();
+          body.type = 'bandpass';
+          body.frequency.value = centerFrequency;
+          body.Q.value = 0.9;
           const gain = audioContext.createGain();
           gain.gain.value = loudness;
-          source.connect(filter); filter.connect(gain); gain.connect(audioContext.destination);
+          source.connect(body); body.connect(gain); gain.connect(master);
           source.start(now + at);
-          source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+          source.onended = () => { source.disconnect(); body.disconnect(); gain.disconnect(); };
         }
-        // Bufnitură joasă când zarul lovește masa.
-        function thump(at, loudness) {
+        // Rezonanță scurtă și moale a mesei, fără „bufnitură”.
+        function knock(at, loudness) {
           const oscillator = audioContext.createOscillator();
           const gain = audioContext.createGain();
           oscillator.type = 'sine';
-          oscillator.frequency.setValueAtTime(170, now + at);
-          oscillator.frequency.exponentialRampToValueAtTime(60, now + at + 0.09);
+          oscillator.frequency.value = 220 + Math.random() * 40;
           gain.gain.setValueAtTime(0.0001, now + at);
-          gain.gain.exponentialRampToValueAtTime(loudness, now + at + 0.006);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.12);
-          oscillator.connect(gain); gain.connect(audioContext.destination);
-          oscillator.start(now + at); oscillator.stop(now + at + 0.14);
+          gain.gain.linearRampToValueAtTime(loudness, now + at + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.07);
+          oscillator.connect(gain); gain.connect(master);
+          oscillator.start(now + at); oscillator.stop(now + at + 0.08);
           oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
         }
         const jitter = () => (Math.random() - 0.5) * 0.02;
-        // 1) Zornăit în mână, imediat (0–0,42 s).
-        for (let t = 0; t < 0.42; t += 0.032 + Math.random() * 0.018) {
-          click(t, 0.18 + Math.random() * 0.14, 0.03, 2600 + Math.random() * 1800);
+        // 1) Zornăit discret în mână (0–0,42 s).
+        for (let t = 0; t < 0.42; t += 0.045 + Math.random() * 0.025) {
+          tock(t, 0.07 + Math.random() * 0.05, 0.028, 1700 + Math.random() * 900);
         }
-        // 2) Impactul (zarurile ating masa la ~0,47 s) + sărituri.
-        [[0.47, 0.85], [0.65, 0.55], [0.81, 0.38], [0.93, 0.24]].forEach(([at, loudness]) => {
+        // 2) Aterizare (~0,47 s) și sărituri, moi.
+        [[0.47, 0.42], [0.65, 0.27], [0.81, 0.17], [0.93, 0.1]].forEach(([at, loudness]) => {
           for (let die = 0; die <= extraDice; die++) {
             const offset = die * 0.035 + jitter();
-            click(at + offset, loudness, 0.055, 1500 + Math.random() * 900);
-            thump(at + offset, loudness * 0.5);
+            tock(at + offset, loudness, 0.045, 900 + Math.random() * 500);
+            knock(at + offset, loudness * 0.18);
           }
         });
-        // 3) Rostogolire până se opresc (~1,0–1,45 s), tot mai încet.
-        let loudness = 0.32;
-        for (let t = 0.99; t < 1.45; t += 0.045 + (t - 0.99) * 0.12) {
-          click(t + jitter(), loudness, 0.035, 2000 + Math.random() * 1400);
-          loudness *= 0.8;
+        // 3) Rostogolire care se stinge (~1,0–1,45 s).
+        let loudness = 0.14;
+        for (let t = 0.99; t < 1.45; t += 0.05 + (t - 0.99) * 0.12) {
+          tock(t + jitter(), loudness, 0.03, 1300 + Math.random() * 700);
+          loudness *= 0.78;
         }
       }
       function renderDiceStrip() {
