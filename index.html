@@ -1148,6 +1148,7 @@
       let lastDiceRoll = loadLastDiceRoll();
       let diceSpinCounter = 0;
       let diceAutoCloseTimeoutId = 0;
+      let diceOverlayClosableAt = 0;
       let robberCountdownIntervalId = 0;
       let diceRevealTimeoutId = 0;
 
@@ -1387,6 +1388,7 @@
         const dice = buildDiceStage(count);
         diceOverlayElement.classList.add('is-open');
         diceOverlayElement.setAttribute('aria-hidden', 'false');
+        diceOverlayClosableAt = Date.now() + 1350 + count * 45; // după ce apare rezultatul
         // Poziție inițială aleatorie, apoi rotire spre fața finală cu câteva ture complete.
         dice.forEach(({ wrap, cube }, index) => {
           const startX = Math.floor(Math.random() * 4) * 90;
@@ -2097,7 +2099,12 @@
         });
       });
       diceStripButton.addEventListener('click', rollDiceWithAnimation);
-      diceOverlayElement.addEventListener('click', closeDiceOverlay);
+      // Nu închide fereastra cât timp zarurile încă se rostogolesc (și nici din „click”-ul fantomă
+      // trimis de telefon imediat după ce s-a ridicat degetul de pe butonul mare).
+      diceOverlayElement.addEventListener('click', () => {
+        if (Date.now() < diceOverlayClosableAt) return;
+        closeDiceOverlay();
+      });
       diceEnabledCheckboxElement.addEventListener('change', () => { diceCountSelectElement.disabled = !diceEnabledCheckboxElement.checked; });
 
       // ===== Ecran mereu aprins (Screen Wake Lock) =====
