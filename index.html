@@ -51,12 +51,13 @@
     .name.is-long{font-size:clamp(31px,calc(var(--uvw) * 9),51px)}
     .name.is-very-long{font-size:clamp(24px,calc(var(--uvw) * 7),37px)}
     .timer-frame{cursor:pointer;-webkit-tap-highlight-color:transparent}
-    .pause-badge{display:none;position:absolute;left:50%;bottom:13%;transform:translateX(-50%);white-space:nowrap;font-size:11px;font-weight:900;letter-spacing:.06em;color:#ffe397;background:#3b3620;border:1px solid #ffe39766;border-radius:999px;padding:4px 10px}
-    .timer-frame.is-paused .pause-badge{display:block}
+    .timer-frame::before{content:"";position:absolute;inset:9%;border-radius:50%;background:radial-gradient(circle,#ffe3971f 0%,#ffe39700 70%);opacity:0;transition:opacity .35s;pointer-events:none}
+    .timer-frame.is-paused::before{opacity:1}
     .timer-frame.is-paused .timer-warning{display:none}
-    .timer-frame.is-paused .timer-ring{opacity:.45}
-    .timer-frame.is-paused .timer-readout,.timer-frame.is-paused .timer-unlimited{animation:pause-blink 1.4s ease-in-out infinite;color:#ffe397}
-    @keyframes pause-blink{0%,100%{opacity:1}50%{opacity:.35}}
+    .timer-frame.is-paused .timer-ring{opacity:.3;transition:opacity .35s}
+    .timer-frame.is-paused .timer-readout,.timer-frame.is-paused .timer-unlimited{animation:pause-pulse 1.8s ease-in-out infinite;color:#ffe397}
+    @keyframes pause-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+    .subtitle.is-paused{color:#ffe397;font-weight:800}
     .end.is-paused .turn-elapsed{opacity:.6}
     .timer-readout{font-size:clamp(25px,calc(var(--uvw) * 6),31px);font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:.055em;color:#d8def4;transition:color .25s}
     .timer-unlimited{display:none;font-size:16px;font-weight:750;color:#c0cae4;letter-spacing:.01em;text-align:center}
@@ -510,7 +511,7 @@
       </div>
     </header>
     <section class="center" aria-label="Tura și cronometrul">
-      <p class="subtitle">Acum joacă</p>
+      <p class="subtitle" id="subtitleText">Acum joacă</p>
       <div class="timer-frame" id="timerFrame" role="timer" aria-label="Timp rămas: 45 de secunde">
         <svg class="timer-ring" viewBox="0 0 280 280" aria-hidden="true" focusable="false">
           <circle class="ring-track" cx="140" cy="140" r="123" />
@@ -522,7 +523,6 @@
           <div class="timer-unlimited" id="timerUnlimited">Fără limită de timp</div>
         </div>
         <div class="timer-warning" id="timerWarning" aria-hidden="true"></div>
-        <div class="pause-badge" id="pauseBadge" aria-hidden="true">⏸ Pauză · atinge ca să continui</div>
       </div>
       <div class="hint" id="nextText" aria-live="polite">Urmează Adi</div>
       <button type="button" class="dice-strip" id="diceStrip" aria-label="Dă din nou cu zarul"></button>
@@ -1185,6 +1185,9 @@
         timerFrameElement.classList.toggle('is-paused', paused);
         document.getElementById('endTurn').classList.toggle('is-paused', paused);
         timerFrameElement.setAttribute('aria-pressed', String(paused));
+        const subtitle = document.getElementById('subtitleText');
+        subtitle.textContent = paused ? '⏸ Pauză · atinge cercul ca să continui' : 'Acum joacă';
+        subtitle.classList.toggle('is-paused', paused);
       }
       function pauseGame() {
         if (pausedAtMilliseconds !== null) return;
