@@ -100,9 +100,14 @@
     .name-row{display:flex;align-items:center;gap:6px}
     .name-row .name-dot{flex:0 0 28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#101423;background:var(--player-color)}
     .name-row .settings-name-input{flex:1;min-width:0}
-    .name-row .move-btn{flex:0 0 40px;height:42px;border:0;border-radius:10px;background:#2a3049;color:#dfe4f8;font-size:16px;font-weight:900}
-    .name-row .move-btn:disabled{opacity:.25}
-    .name-row .move-btn:active{transform:scale(.94)}
+    .settings-name-list{position:relative}
+    .name-row{position:relative;border-radius:14px;transition:transform .18s ease}
+    .name-row .drag-handle{flex:0 0 48px;height:44px;border:0;border-radius:11px;background:#2a3049;color:#c6cce4;font-size:22px;line-height:1;touch-action:none;cursor:grab;display:grid;place-items:center}
+    .name-row .drag-handle:active{cursor:grabbing}
+    .name-row.is-dragging{z-index:5;transition:none;background:#232a42;box-shadow:0 14px 30px #000a,0 0 0 2px #b49bff88}
+    .name-row.is-dragging .drag-handle{background:#b49bff;color:#11152c}
+    .settings-name-list.is-sorting .name-row:not(.is-dragging){transition:transform .18s ease}
+    .drag-hint{font-size:12px;color:#8e98b5;margin:-2px 0 2px}
     .name-row.is-starter .settings-name-input{border-color:#ffe39799}
     .name-row .starter-tag{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:900;color:#ffe397;pointer-events:none}
     .name-input-wrap{position:relative;flex:1;min-width:0;display:flex}
@@ -556,7 +561,7 @@
   <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
     <form id="playerSettingsForm" autocomplete="off">
       <h2 id="settingsTitle">⚙️ Setări</h2>
-      <p class="settings-description">Alege câți jucați (maximum 6). Schimbi ordinea cu ▲ ▼; jocul merge în cerc, în ordinea listei.</p>
+      <p class="settings-description">Alege câți jucați (maximum 6). Ține apăsat ⠿ și trage ca să schimbi ordinea; jocul merge în cerc, în ordinea listei.</p>
       <label class="settings-field-label" for="playerCount">Număr de jucători</label>
       <select class="settings-select" id="playerCount" name="playerCount">
         <option value="1">1 jucător</option><option value="2">2 jucători</option>
@@ -877,27 +882,79 @@
           });
           wrap.append(input);
           if (index === editedStarterIndex) { const tag = document.createElement('span'); tag.className = 'starter-tag'; tag.textContent = '🎬 începe'; wrap.append(tag); }
-          const up = document.createElement('button'); up.type = 'button'; up.className = 'move-btn'; up.textContent = '▲';
-          up.setAttribute('aria-label', `Mută ${editedPlayerNames[index]} mai sus`); up.disabled = index === 0;
-          const down = document.createElement('button'); down.type = 'button'; down.className = 'move-btn'; down.textContent = '▼';
-          down.setAttribute('aria-label', `Mută ${editedPlayerNames[index]} mai jos`); down.disabled = index === chosenCount - 1;
-          up.addEventListener('click', () => moveEditedPlayer(index, -1));
-          down.addEventListener('click', () => moveEditedPlayer(index, 1));
-          row.append(dot, wrap, up, down);
+          const handle = document.createElement('button');
+          handle.type = 'button';
+          handle.className = 'drag-handle';
+          handle.textContent = '⠿';
+          handle.setAttribute('aria-label', `Trage ca să muți ${editedPlayerNames[index]} (sau săgeți sus/jos)`);
+          handle.addEventListener('pointerdown', event => startDraggingPlayerRow(event, index));
+          handle.addEventListener('keydown', event => {
+            if (event.key === 'ArrowUp') { event.preventDefault(); moveEditedPlayerTo(index, index - 1, true); }
+            if (event.key === 'ArrowDown') { event.preventDefault(); moveEditedPlayerTo(index, index + 1, true); }
+          });
+          row.append(dot, wrap, handle);
           playerNameFieldsElement.append(row);
         }
         renderStarterOptions();
       }
-      function moveEditedPlayer(index, direction) {
-        const target = index + direction;
-        if (target < 0 || target >= Number(playerCountSelectElement.value)) return;
-        [editedPlayerNames[index], editedPlayerNames[target]] = [editedPlayerNames[target], editedPlayerNames[index]];
-        // Cine începe rămâne aceeași persoană, chiar dacă își schimbă locul în listă.
-        if (editedStarterIndex === index) editedStarterIndex = target;
-        else if (editedStarterIndex === target) editedStarterIndex = index;
+      function moveEditedPlayerTo(from, to, keepFocus) {
+        const count = Number(playerCountSelectElement.value);
+        if (to < 0 || to >= count || to === from) return;
+        const starterName = editedStarterIndex;
+        const [moved] = editedPlayerNames.splice(from, 1);
+        editedPlayerNames.splice(to, 0, moved);
+        // Cine începe rămâne aceeași persoană, oriunde ar ajunge în listă.
+        const order = Array.from({ length: count }, (_, i) => i);
+        const [movedIndex] = order.splice(from, 1);
+        order.splice(to, 0, movedIndex);
+        editedStarterIndex = order.indexOf(starterName);
         renderEditablePlayerNameInputs();
-        const button = playerNameFieldsElement.children[target]?.querySelectorAll('.move-btn')[direction < 0 ? 0 : 1];
-        if (button && !button.disabled) button.focus(); // poți apăsa din nou ca să muți mai departe
+        if (keepFocus) playerNameFieldsElement.children[to]?.querySelector('.drag-handle')?.focus();
+      }
+      // Drag & drop cu degetul sau mouse-ul: rândul urmează degetul, ceilalți se dau la o parte.
+      function startDraggingPlayerRow(event, fromIndex) {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        const handle = event.currentTarget;
+        const rows = [...playerNameFieldsElement.children];
+        const row = rows[fromIndex];
+        const rowBoxes = rows.map(r => r.getBoundingClientRect());
+        const step = rows.length > 1 ? (rowBoxes[1].top - rowBoxes[0].top) : rowBoxes[0].height;
+        const startY = event.clientY;
+        let targetIndex = fromIndex;
+        handle.setPointerCapture(event.pointerId);
+        row.classList.add('is-dragging');
+        playerNameFieldsElement.classList.add('is-sorting');
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(15);
+        const onMove = moveEvent => {
+          const dy = moveEvent.clientY - startY;
+          const minDy = (0 - fromIndex) * step, maxDy = (rows.length - 1 - fromIndex) * step;
+          const clamped = Math.max(minDy - step * 0.3, Math.min(maxDy + step * 0.3, dy));
+          row.style.transform = `translateY(${clamped / uiZoom}px) scale(1.02)`;
+          const newTarget = Math.max(0, Math.min(rows.length - 1, fromIndex + Math.round(dy / step)));
+          if (newTarget !== targetIndex) {
+            targetIndex = newTarget;
+            if (typeof navigator.vibrate === 'function') navigator.vibrate(8);
+            rows.forEach((other, i) => {
+              if (i === fromIndex) return;
+              let shift = 0;
+              if (fromIndex < targetIndex && i > fromIndex && i <= targetIndex) shift = -step;
+              if (fromIndex > targetIndex && i < fromIndex && i >= targetIndex) shift = step;
+              other.style.transform = shift ? `translateY(${shift / uiZoom}px)` : '';
+            });
+          }
+        };
+        const onEnd = () => {
+          handle.removeEventListener('pointermove', onMove);
+          handle.removeEventListener('pointerup', onEnd);
+          handle.removeEventListener('pointercancel', onEnd);
+          playerNameFieldsElement.classList.remove('is-sorting');
+          rows.forEach(r => { r.style.transform = ''; r.classList.remove('is-dragging'); });
+          if (targetIndex !== fromIndex) moveEditedPlayerTo(fromIndex, targetIndex, false);
+        };
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onEnd);
+        handle.addEventListener('pointercancel', onEnd);
       }
       function renderStarterOptions() {
         const select = document.getElementById('starterSelect');
