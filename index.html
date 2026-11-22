@@ -57,7 +57,11 @@
     .timer-frame.is-paused .timer-ring{opacity:.3;transition:opacity .35s}
     .timer-frame.is-paused .timer-readout,.timer-frame.is-paused .timer-unlimited{animation:pause-pulse 1.8s ease-in-out infinite;color:#ffe397}
     @keyframes pause-pulse{0%,100%{opacity:1}50%{opacity:.45}}
-    .subtitle.is-paused{color:#ffe397;font-weight:800}
+    /* Pauză integrată în cerc: două bare înaintea timpului + etichetă discretă dedesubt */
+    .pause-label{display:none;margin-top:4px;font-size:clamp(10px,calc(var(--uvw) * 2.8),12px);font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#ffe397;opacity:.85}
+    .timer-frame.is-paused .pause-label{display:block}
+    .timer-readout{display:inline-flex;align-items:center;justify-content:center;gap:.32em}
+    .timer-frame.is-paused .timer-readout::before{content:"";width:.5em;height:.62em;flex:0 0 auto;background:linear-gradient(90deg,currentColor 0 34%,transparent 34% 66%,currentColor 66% 100%);border-radius:2px}
     .end.is-paused .turn-elapsed{opacity:.6}
     .timer-readout{font-size:clamp(25px,calc(var(--uvw) * 6),31px);font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:.055em;color:#d8def4;transition:color .25s}
     .timer-unlimited{display:none;font-size:16px;font-weight:750;color:#c0cae4;letter-spacing:.01em;text-align:center}
@@ -521,6 +525,7 @@
           <h1 class="name miha" id="activeName">Miha</h1>
           <div class="timer-readout" id="timerReadout">00:45</div>
           <div class="timer-unlimited" id="timerUnlimited">Fără limită de timp</div>
+          <div class="pause-label" aria-hidden="true">Pauză</div>
         </div>
         <div class="timer-warning" id="timerWarning" aria-hidden="true"></div>
       </div>
@@ -1185,9 +1190,7 @@
         timerFrameElement.classList.toggle('is-paused', paused);
         document.getElementById('endTurn').classList.toggle('is-paused', paused);
         timerFrameElement.setAttribute('aria-pressed', String(paused));
-        const subtitle = document.getElementById('subtitleText');
-        subtitle.textContent = paused ? '⏸ Pauză · atinge cercul ca să continui' : 'Acum joacă';
-        subtitle.classList.toggle('is-paused', paused);
+
       }
       function pauseGame() {
         if (pausedAtMilliseconds !== null) return;
