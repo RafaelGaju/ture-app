@@ -96,7 +96,21 @@
     .settings-field-label{display:block;margin:15px 0 7px;font-size:14px;font-weight:750;color:#dbe1f8}
     .settings-select,.settings-name-input{width:100%;background:#141a2c;border:1px solid #49516f;color:#f6f7ff;border-radius:12px;padding:12px;font:inherit;font-size:16px;outline:none}
     .settings-select:focus,.settings-name-input:focus{border-color:#b49bff;box-shadow:0 0 0 2px #b49bff40}
-    .settings-name-list{display:grid;grid-template-columns:1fr 1fr;column-gap:10px;row-gap:4px}
+    .settings-name-list{display:grid;grid-template-columns:1fr;row-gap:6px}
+    .name-row{display:flex;align-items:center;gap:6px}
+    .name-row .name-dot{flex:0 0 28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#101423;background:var(--player-color)}
+    .name-row .settings-name-input{flex:1;min-width:0}
+    .name-row .move-btn{flex:0 0 40px;height:42px;border:0;border-radius:10px;background:#2a3049;color:#dfe4f8;font-size:16px;font-weight:900}
+    .name-row .move-btn:disabled{opacity:.25}
+    .name-row .move-btn:active{transform:scale(.94)}
+    .name-row.is-starter .settings-name-input{border-color:#ffe39799}
+    .name-row .starter-tag{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:900;color:#ffe397;pointer-events:none}
+    .name-input-wrap{position:relative;flex:1;min-width:0;display:flex}
+    .name-row.is-starter .settings-name-input{padding-right:70px}
+    .starter-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+    .starter-row .settings-select{flex:1}
+    .reset-starter{display:flex;align-items:center;gap:10px;margin:10px 0 2px;font-weight:750;color:#dfe4f8;font-size:14px}
+    .reset-starter .settings-select{flex:1}
     .settings-name-list label{min-width:0}
     .settings-name-list .settings-field-label{font-size:12px;margin:9px 0 5px}
     .settings-name-input{padding:10px;font-size:15px}
@@ -110,7 +124,7 @@
     .settings-note{font-size:12px;line-height:1.5;color:#b9c1d9;margin:8px 0 0}
     .settings-error{min-height:18px;margin-top:8px;font-size:13px;color:#ff9bac}
     .settings-dialog .dialog-actions{position:sticky;bottom:-22px;z-index:1;padding:13px 0 1px;background:#23283d;margin-top:5px}
-    @media(max-width:350px){.settings-name-list{grid-template-columns:1fr}}
+
     .dialog-actions button{border:0;border-radius:11px;padding:12px 16px;font-weight:700}
     .cancel{background:#373e58;color:white}.confirm{background:#ad9bff;color:#11152c}
     /* Butonul principal: text pe două rânduri când zarurile sunt active */
@@ -530,18 +544,19 @@
     <div class="dice-close-hint">Atinge oriunde pentru a închide</div>
   </div>
   <dialog id="resetDialog" aria-labelledby="resetTitle">
-    <h2 id="resetTitle">Resetezi turele?</h2>
+    <h2 id="resetTitle">Joc nou / resetare</h2>
     <p id="resetDescription">Se revine la Miha, runda 1. Cronometrul nu se resetează.</p>
+    <label class="reset-starter" for="resetStarter">🎬 Începe <select class="settings-select" id="resetStarter"></select></label>
     <label class="reset-option" id="resetExtrasLabel"><input type="checkbox" id="resetExtras" checked /> Joc nou: repornește timpul jocului, șterge scorul și istoricul zarurilor</label>
     <div class="dialog-actions">
       <button class="cancel" id="cancelReset" type="button">Anulează</button>
-      <button class="confirm" id="confirmReset" type="button">Resetează rundele</button>
+      <button class="confirm" id="confirmReset" type="button">Începe</button>
     </div>
   </dialog>
   <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
     <form id="playerSettingsForm" autocomplete="off">
       <h2 id="settingsTitle">⚙️ Setări</h2>
-      <p class="settings-description">Alege câți jucați și în ce ordine. Maximum 6 jucători.</p>
+      <p class="settings-description">Alege câți jucați (maximum 6). Schimbi ordinea cu ▲ ▼; jocul merge în cerc, în ordinea listei.</p>
       <label class="settings-field-label" for="playerCount">Număr de jucători</label>
       <select class="settings-select" id="playerCount" name="playerCount">
         <option value="1">1 jucător</option><option value="2">2 jucători</option>
@@ -549,6 +564,10 @@
         <option value="5">5 jucători</option><option value="6">6 jucători</option>
       </select>
       <div class="settings-name-list" id="playerNameFields"></div>
+      <div class="starter-row">
+        <label class="settings-field-label" for="starterSelect" style="margin:0">🎬 Începe</label>
+        <select class="settings-select" id="starterSelect"></select>
+      </div>
       <div class="settings-divider"></div>
       <label class="settings-field-label" for="timerDurationSeconds">Durata unei ture</label>
       <div class="settings-timer-row">
@@ -831,15 +850,18 @@
         try { localStorage.setItem(playerSettingsStorageKey, JSON.stringify(playerNames)); }
         catch (_) { /* Numele funcționează în sesiunea curentă. */ }
       }
+      let editedStarterIndex = 0;
       function renderEditablePlayerNameInputs() {
         const chosenCount = Number(playerCountSelectElement.value);
         playerNameFieldsElement.replaceChildren();
+        if (editedStarterIndex >= chosenCount) editedStarterIndex = 0;
         for (let index = 0; index < chosenCount; index++) {
           if (!editedPlayerNames[index]) editedPlayerNames[index] = `Jucător ${index + 1}`;
-          const label = document.createElement('label');
-          const labelText = document.createElement('span');
-          labelText.className = 'settings-field-label';
-          labelText.textContent = `Jucător ${index + 1}`;
+          const row = document.createElement('div');
+          row.className = 'name-row' + (index === editedStarterIndex ? ' is-starter' : '');
+          row.style.setProperty('--player-color', playerColorPalette[index]);
+          const dot = document.createElement('span'); dot.className = 'name-dot'; dot.textContent = index + 1;
+          const wrap = document.createElement('span'); wrap.className = 'name-input-wrap';
           const input = document.createElement('input');
           input.type = 'text';
           input.className = 'settings-name-input';
@@ -847,16 +869,50 @@
           input.required = true;
           input.autocomplete = 'off';
           input.value = editedPlayerNames[index];
+          input.setAttribute('aria-label', `Jucătorul ${index + 1}`);
           input.addEventListener('input', () => {
             editedPlayerNames[index] = input.value;
             settingsErrorElement.textContent = '';
+            renderStarterOptions();
           });
-          label.append(labelText, input);
-          playerNameFieldsElement.append(label);
+          wrap.append(input);
+          if (index === editedStarterIndex) { const tag = document.createElement('span'); tag.className = 'starter-tag'; tag.textContent = '🎬 începe'; wrap.append(tag); }
+          const up = document.createElement('button'); up.type = 'button'; up.className = 'move-btn'; up.textContent = '▲';
+          up.setAttribute('aria-label', `Mută ${editedPlayerNames[index]} mai sus`); up.disabled = index === 0;
+          const down = document.createElement('button'); down.type = 'button'; down.className = 'move-btn'; down.textContent = '▼';
+          down.setAttribute('aria-label', `Mută ${editedPlayerNames[index]} mai jos`); down.disabled = index === chosenCount - 1;
+          up.addEventListener('click', () => moveEditedPlayer(index, -1));
+          down.addEventListener('click', () => moveEditedPlayer(index, 1));
+          row.append(dot, wrap, up, down);
+          playerNameFieldsElement.append(row);
         }
+        renderStarterOptions();
       }
+      function moveEditedPlayer(index, direction) {
+        const target = index + direction;
+        if (target < 0 || target >= Number(playerCountSelectElement.value)) return;
+        [editedPlayerNames[index], editedPlayerNames[target]] = [editedPlayerNames[target], editedPlayerNames[index]];
+        // Cine începe rămâne aceeași persoană, chiar dacă își schimbă locul în listă.
+        if (editedStarterIndex === index) editedStarterIndex = target;
+        else if (editedStarterIndex === target) editedStarterIndex = index;
+        renderEditablePlayerNameInputs();
+        const button = playerNameFieldsElement.children[target]?.querySelectorAll('.move-btn')[direction < 0 ? 0 : 1];
+        if (button && !button.disabled) button.focus(); // poți apăsa din nou ca să muți mai departe
+      }
+      function renderStarterOptions() {
+        const select = document.getElementById('starterSelect');
+        const chosenCount = Number(playerCountSelectElement.value);
+        select.replaceChildren();
+        for (let index = 0; index < chosenCount; index++) select.add(new Option(editedPlayerNames[index]?.trim() || `Jucător ${index + 1}`, String(index)));
+        select.value = String(editedStarterIndex);
+      }
+      document.getElementById('starterSelect').addEventListener('change', event => {
+        editedStarterIndex = Number(event.target.value);
+        renderEditablePlayerNameInputs();
+      });
       function openPlayerSettingsWithoutChangingCurrentTimer() {
         editedPlayerNames = [...playerNames];
+        editedStarterIndex = 0;
         playerCountSelectElement.value = String(playerNames.length);
         settingsErrorElement.textContent = '';
         renderEditablePlayerNameInputs();
@@ -885,7 +941,10 @@
       function saveConfiguredPlayersFromSettingsForm(event) {
         event.preventDefault();
         const selectedPlayerCount = Number(playerCountSelectElement.value);
-        const submittedNames = editedPlayerNames.slice(0, selectedPlayerCount).map(name => name.trim());
+        const orderedNames = editedPlayerNames.slice(0, selectedPlayerCount).map(name => name.trim());
+        const starter = Math.min(editedStarterIndex, selectedPlayerCount - 1);
+        // Rotim lista astfel încât cine începe să fie primul; ordinea în cerc rămâne aceeași.
+        const submittedNames = [...orderedNames.slice(starter), ...orderedNames.slice(0, starter)];
         if (submittedNames.length !== selectedPlayerCount || submittedNames.some(name => !name || name.length > 24)) {
           settingsErrorElement.textContent = 'Fiecare jucător trebuie să aibă un nume de 1–24 caractere.';
           return;
@@ -1079,7 +1138,7 @@
         goalLineElement.querySelector('.goal-short').textContent = `🏁 Până la ${gameSettings.target || 10}`;
         document.querySelector('header').classList.toggle('has-goal', gameSettings.catan);
         updateGoalPlacement();
-        resetDescriptionElement.textContent = `Se revine la ${playerNames[0]}, runda 1. Cronometrul nu se resetează.`;
+
         document.title = `Ture — ${playerNames.join(' · ')}`;
 
         playersContainerElement.classList.toggle('has-many', playerNames.length > 3);
@@ -2121,7 +2180,11 @@
       openScoreButton.addEventListener('click', openScoreDialog);
       playersContainerElement.addEventListener('click', () => { if (gameSettings.catan) openScoreDialog(); });
       document.getElementById('closeScore').addEventListener('click', () => scoreDialog.close());
-      document.getElementById('winnerNewGame').addEventListener('click', () => { winnerOverlayElement.classList.remove('is-open'); startNewGame(); });
+      document.getElementById('winnerNewGame').addEventListener('click', () => {
+        winnerOverlayElement.classList.remove('is-open');
+        document.getElementById('resetExtras').checked = true;
+        document.getElementById('reset').click(); // fereastra de joc nou, cu „Cine începe”
+      });
       document.getElementById('winnerClose').addEventListener('click', () => {
         winnerOverlayElement.classList.remove('is-open');
         if (winnerOverlayElement.classList.contains('is-midgame')) {
@@ -2233,7 +2296,30 @@
       undoButton.addEventListener('click', () => {
         if (completedTurns > 0) updateCompletedTurnsAndRefresh(completedTurns - 1);
       });
+      function fillResetStarterOptions() {
+        const select = document.getElementById('resetStarter');
+        select.replaceChildren();
+        playerNames.forEach((name, index) => select.add(new Option(name, String(index))));
+        select.value = '0';
+      }
+      // Rotește jucătorii ca `index` să fie primul; scorul (dacă rămâne) își urmează proprietarii.
+      function rotatePlayersSoFirstIs(index) {
+        if (!index) return;
+        const count = playerNames.length;
+        const remap = oldIndex => (oldIndex < 0 ? oldIndex : (oldIndex - index + count) % count);
+        playerNames = [...playerNames.slice(index), ...playerNames.slice(0, index)];
+        saveConfiguredPlayerNames();
+        catanScore.base = [...catanScore.base.slice(index), ...catanScore.base.slice(0, index)];
+        ['road', 'army', 'shortWinner', 'longWinner'].forEach(key => { catanScore[key] = remap(catanScore[key]); });
+        saveCatanScore();
+        scoreUndoStack = [];
+      }
+      document.getElementById('resetStarter').addEventListener('change', event => {
+        resetDescriptionElement.textContent = `Începe ${playerNames[Number(event.target.value)]}, runda 1. Cronometrul turei pornește de la capăt.`;
+      });
       document.getElementById('reset').addEventListener('click', () => {
+        fillResetStarterOptions();
+        resetDescriptionElement.textContent = `Începe ${playerNames[0]}, runda 1. Cronometrul turei pornește de la capăt.`;
         if (typeof resetDialog.showModal === 'function') resetDialog.showModal();
         else if (window.confirm(`Resetezi la ${playerNames[0]}, runda 1?`)) updateCompletedTurnsAndRefresh(0);
       });
@@ -2247,7 +2333,10 @@
           lastDiceRoll = null; saveLastDiceRoll();
           renderDiceStrip();
         }
+        rotatePlayersSoFirstIs(Number(document.getElementById('resetStarter').value) || 0);
         updateCompletedTurnsAndRefresh(0);
+        startNewTimerOnlyAfterEndingTurn();
+        renderElapsedCounters(true);
         resetDialog.close();
       });
       function updateFullscreenToggleAppearance() {
