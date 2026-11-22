@@ -2143,16 +2143,8 @@
         const winnerWasOpen = winnerOverlayElement.classList.contains('is-open');
         checkForCatanWinner();
         const victoryJustShown = !winnerWasOpen && winnerOverlayElement.classList.contains('is-open');
-        if (victoryJustShown && awardChanges.length) {
-          // Victoria e evenimentul principal; bonusul care a adus-o apare mic, sub câștigător.
-          const note = document.getElementById('winnerAward');
-          note.replaceChildren();
-          awardChanges.forEach(([key, holder, previous]) => {
-            const chip = document.createElement('span');
-            chip.textContent = `${key === 'army' ? '⚔️ + Cea mai mare armată' : '🛤️ + Cel mai lung drum'}${previous >= 0 ? ` (de la ${playerNames[previous]})` : ''}`;
-            note.append(chip);
-          });
-        } else {
+        // Victoria e evenimentul principal (bonusurile apar ca etichete sub câștigător).
+        if (!victoryJustShown) {
           awardChanges.forEach(([key, holder, previous]) => announceAwardChange(key, holder, previous));
         }
       }
@@ -2285,14 +2277,14 @@
           saveCatanScore();
           displayCurrentPlayerAndRound();
         }
-        document.getElementById('winnerSub').textContent = `${catanTotal(winnerIndex)} puncte de victorie · runda ${round}`;
+        document.getElementById('winnerSub').textContent = `${catanTotal(winnerIndex)} puncte de victorie`;
         document.getElementById('winnerKind').textContent = longCampaign ? `⚜️ Campanie lungă · ${winningPoints()} puncte ⚜️` : `Campanie scurtă · ${winningPoints()} puncte`;
         document.getElementById('winnerTrophy').textContent = longCampaign ? '👑' : '🏆';
         const stats = document.getElementById('winnerStats');
         stats.replaceChildren();
         // Pe ecranul final rămân doar locurile 1, 2 și 3 (fără alte statistici).
         renderWinnerPodium(winnerIndex);
-        document.getElementById('winnerAward').replaceChildren();
+        renderWinnerAwards(winnerIndex);
         winnerOverlayElement.classList.toggle('is-epic', longCampaign);
         winnerOverlayElement.classList.remove('is-midgame');
         document.getElementById('winnerClose').textContent = 'Continuăm';
@@ -2377,9 +2369,18 @@
         window.clearTimeout(awardHideTimeoutId);
         document.getElementById('awardOverlay').classList.remove('is-open');
       });
+      // Etichetele de sub câștigător: bonusurile pe care le deține (fără „+”).
+      function renderWinnerAwards(index) {
+        const note = document.getElementById('winnerAward');
+        note.replaceChildren();
+        [['road', '🛤️ Cel mai lung drum'], ['army', '⚔️ Cea mai mare armată']].forEach(([key, label]) => {
+          if (catanScore[key] !== index) return;
+          const chip = document.createElement('span'); chip.textContent = label; note.append(chip);
+        });
+      }
       function showShortCampaignWin(index) {
         if (scoreDialog.open) scoreDialog.close();
-        document.getElementById('winnerAward').replaceChildren();
+        renderWinnerAwards(index);
         const nameElement = document.getElementById('winnerName');
         nameElement.textContent = `${playerNames[index]} a câștigat campania scurtă!`;
         nameElement.style.setProperty('--player-color', playerColorPalette[index]);
