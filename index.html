@@ -485,7 +485,7 @@
       .quick-score{grid-column:2;grid-row:3;margin:0 0 14px}
       .quick-score button{min-height:clamp(42px,calc(var(--uvh) * 7),58px);font-size:clamp(11.5px,calc(var(--uvw) * 1.4),14px)}
       .quick-score button b{display:block;font-size:clamp(16px,calc(var(--uvw) * 2),22px)}
-      .end{grid-column:2;grid-row:4;min-height:0;height:100%;max-height:340px;align-self:stretch;font-size:clamp(28px,min(calc(var(--uvw) * 4),calc(var(--uvh) * 7)),44px)}
+      .end{grid-column:2;grid-row:4;min-height:0;height:auto;max-height:340px;align-self:stretch;font-size:clamp(28px,min(calc(var(--uvw) * 4),calc(var(--uvh) * 7)),44px)}
       .end.is-dice .end-main{font-size:clamp(24px,min(calc(var(--uvw) * 3.4),calc(var(--uvh) * 6)),40px)}
       .actions{grid-column:2;grid-row:5;padding:12px 0 2px}
     }
@@ -503,6 +503,32 @@
       .quick-score button b{display:inline;font-size:14px;margin-right:2px}
       .actions{padding-top:4px}
       .end{padding:10px}
+      /* Header doar deasupra coloanei din dreapta: cercul din stânga urcă până sus și se centrează pe toată înălțimea */
+      main{grid-template-rows:auto auto auto minmax(0,1fr) auto;padding-top:max(10px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom))}
+      header{grid-column:2;grid-row:1;display:flex;column-gap:8px}
+      header .eyebrow,header.has-goal .eyebrow{display:none}
+      header .header-right{flex:1;min-width:0}
+      .center{grid-row:1 / -1;justify-content:center;padding:0}
+      .timer-frame{width:min(calc(var(--uvw) * 40),calc(var(--uvh) * 100 - 100px),400px)}
+      main:has(.dice-strip.is-visible) .timer-frame{width:min(calc(var(--uvw) * 40),calc(var(--uvh) * 100 - 165px),400px)}
+      .quick-score button{min-height:44px;font-size:11px;padding:3px 1px}
+      .quick-score button b{display:block;font-size:15px;margin:0}
+      /* Carduri jucători compacte: avatar în stânga, nume + puncte în dreapta */
+      .players{margin:8px 0 8px;gap:6px}
+      .player,.players.has-many .player{display:grid;grid-template-columns:auto minmax(0,1fr);grid-auto-rows:auto;align-content:center;justify-items:start;column-gap:7px;row-gap:2px;min-height:44px;padding:5px 8px;border-radius:13px;text-align:left}
+      .player .circle{grid-row:1 / span 2;align-self:center}
+      .player > span:nth-child(2){max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:750}
+      .player .vp{white-space:nowrap;font-size:11px}
+      .player:not(:has(.vp)) .circle{grid-row:auto}
+      .player.active{transform:none;box-shadow:none}
+      main:has(.players:not(.count-5):not(.count-6)) .end{margin-top:0}
+      main:has(.players:not(.count-5):not(.count-6)) .quick-score{margin-top:0}
+      .end,main:has(.quick-score.is-visible) .end{min-height:80px;max-height:none;padding:10px;border-radius:20px;gap:10px}
+      main:has(.quick-score.is-visible) .players{margin-bottom:8px}
+      .end .turn-elapsed{bottom:6px;font-size:11px}
+      .end svg{width:32px;height:32px}
+      .actions{padding:4px 0 0}
+      .actions .small{padding:6px 8px}
     }
   </style>
 </head>
