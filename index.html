@@ -363,7 +363,9 @@
     .settings-volume-label span{color:#aab3cf;font-variant-numeric:tabular-nums}
     .settings-range{display:block;margin:0}
     .settings-error:empty{display:none}
-    .settings-error{margin:0 0 12px}
+    .settings-error{margin:4px 0 4px;padding:10px 12px;border-radius:12px;background:#3a1624;border:1px solid #ff6a7d66}
+    .settings-title-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .settings-autosave{font-size:11.5px;font-weight:700;color:#8e98b5}
     .settings-actions{margin-top:4px;padding-top:16px;border-top:1px solid #3a4160}
     /* Săgeata dropdown-urilor: desenată de noi, la distanță de margine */
     select.settings-select{-webkit-appearance:none;appearance:none;padding-right:46px;cursor:pointer;
@@ -587,7 +589,10 @@
   </dialog>
   <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
     <form id="playerSettingsForm" autocomplete="off">
-      <h2 id="settingsTitle">⚙️ Setări</h2>
+      <div class="settings-title-row">
+        <h2 id="settingsTitle">⚙️ Setări</h2>
+        <span class="settings-autosave">✓ se salvează automat · atinge în afară ca să închizi</span>
+      </div>
 
       <section class="set-section">
         <h3 class="set-heading">👥 Jucători</h3>
@@ -662,10 +667,7 @@
       </section>
 
       <p class="settings-error" id="settingsError" role="alert"></p>
-      <div class="dialog-actions settings-actions">
-        <button class="cancel" id="cancelSettings" type="button">Anulează</button>
-        <button class="confirm" type="submit">Salvează</button>
-      </div>
+      <button type="submit" hidden aria-hidden="true" tabindex="-1"></button>
     </form>
   </dialog>
   <script>
@@ -2314,7 +2316,10 @@
         };
         dialog.addEventListener('pointerdown', event => { pressStartedOutside = isOutside(event); });
         dialog.addEventListener('click', event => {
-          if (pressStartedOutside && isOutside(event)) dialog.close();
+          if (pressStartedOutside && isOutside(event)) {
+            if (dialog === settingsDialog) saveSettingsAndCloseIfValid();
+            else dialog.close();
+          }
           pressStartedOutside = false;
         });
       });
@@ -2342,7 +2347,18 @@
       document.documentElement.classList.toggle('is-installed', appIsInstalled);
 
       settingsToggleButton.addEventListener('click', openPlayerSettingsWithoutChangingCurrentTimer);
-      document.getElementById('cancelSettings').addEventListener('click', closePlayerSettingsWithoutSaving);
+      // Închiderea ferestrei de setări = salvare automată (dacă e ceva invalid, rămâne deschisă cu mesajul).
+      function saveSettingsAndCloseIfValid() {
+        saveConfiguredPlayersFromSettingsForm({ preventDefault() {} });
+        if (settingsDialog.open && settingsErrorElement.textContent) {
+          settingsErrorElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          if (typeof navigator.vibrate === 'function') navigator.vibrate([30, 40, 30]);
+          return false;
+        }
+        showScoreToast('✓ Setări salvate');
+        return true;
+      }
+      settingsDialog.addEventListener('cancel', event => { event.preventDefault(); saveSettingsAndCloseIfValid(); }); // Esc / „Înapoi”
       playerCountSelectElement.addEventListener('change', renderEditablePlayerNameInputs);
       timerDisabledCheckboxElement.addEventListener('change', updateTimerDurationInputAvailability);
       playerSettingsForm.addEventListener('submit', saveConfiguredPlayersFromSettingsForm);
