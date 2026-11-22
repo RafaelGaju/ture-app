@@ -50,6 +50,14 @@
     .name{color:var(--player-color,#c5a9ff)}
     .name.is-long{font-size:clamp(31px,calc(var(--uvw) * 9),51px)}
     .name.is-very-long{font-size:clamp(24px,calc(var(--uvw) * 7),37px)}
+    .timer-frame{cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .pause-badge{display:none;position:absolute;left:50%;bottom:13%;transform:translateX(-50%);white-space:nowrap;font-size:11px;font-weight:900;letter-spacing:.06em;color:#ffe397;background:#3b3620;border:1px solid #ffe39766;border-radius:999px;padding:4px 10px}
+    .timer-frame.is-paused .pause-badge{display:block}
+    .timer-frame.is-paused .timer-warning{display:none}
+    .timer-frame.is-paused .timer-ring{opacity:.45}
+    .timer-frame.is-paused .timer-readout,.timer-frame.is-paused .timer-unlimited{animation:pause-blink 1.4s ease-in-out infinite;color:#ffe397}
+    @keyframes pause-blink{0%,100%{opacity:1}50%{opacity:.35}}
+    .end.is-paused .turn-elapsed{opacity:.6}
     .timer-readout{font-size:clamp(25px,calc(var(--uvw) * 6),31px);font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:.055em;color:#d8def4;transition:color .25s}
     .timer-unlimited{display:none;font-size:16px;font-weight:750;color:#c0cae4;letter-spacing:.01em;text-align:center}
     .timer-frame.is-untimed .timer-ring,.timer-frame.is-untimed .timer-readout,.timer-frame.is-untimed .timer-warning{display:none}
@@ -170,7 +178,7 @@
     .face.f2{transform:rotateX(90deg) translateZ(calc(var(--s)/2))}
     .face.f5{transform:rotateX(-90deg) translateZ(calc(var(--s)/2))}
     .face.f1 .pip.on{background:radial-gradient(circle at 35% 35%,#ff7d93,#c21f45)}
-    .dice-result{min-height:48px;margin-top:22px;font-size:clamp(28px,calc(var(--uvw) * 8),40px);font-weight:900;color:#fff;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;text-align:center}
+    .dice-result{min-height:56px;margin-top:22px;font-size:clamp(28px,calc(var(--uvw) * 8),40px);font-weight:900;color:#fff;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;text-align:center}
     .dice-result.is-shown{opacity:1;transform:none}
     .dice-result small{display:block;font-size:14px;font-weight:700;color:#aab3cf;margin-top:2px}
     .dice-close-hint{font-size:13px;color:#8e98b5;font-weight:650}
@@ -275,6 +283,19 @@
     .sc-award[aria-pressed="true"]{border-color:#ffe397;background:#3b3620;color:#ffe397}
     .sc-help{margin:12px 4px 10px;font-size:12px;color:#8e98b5;text-align:center;line-height:1.5}
     .sc-done{display:block;width:100%;border:0;border-radius:14px;padding:14px;background:#ad9bff;color:#11152c;font-weight:900;font-size:17px}
+    .award-overlay{position:fixed;inset:0;z-index:35;display:flex;align-items:center;justify-content:center;padding:20px;background:#05071399;opacity:0;pointer-events:none;transition:opacity .25s}
+    .award-overlay.is-open{opacity:1;pointer-events:auto}
+    .award-card{min-width:min(calc(var(--uvw) * 86),300px);max-width:min(calc(var(--uvw) * 92),440px);text-align:center;padding:22px 24px 20px;border-radius:24px;background:linear-gradient(160deg,#2f2a14f5,#1b1a10f5);border:1px solid #ffe39777;box-shadow:0 0 0 1px #ffe39722,0 24px 60px #000c,0 0 60px #ffcf4a33;transform:scale(.85) translateY(20px);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+    .award-overlay.is-open .award-card{transform:none}
+    .award-overlay.is-army .award-card{background:linear-gradient(160deg,#2a1830f5,#170f1cf5);border-color:#ff9bc977;box-shadow:0 24px 60px #000c,0 0 60px #ff6fb033}
+    .award-icon{font-size:64px;line-height:1}
+    .award-overlay.is-open .award-icon{animation:award-pop .6s cubic-bezier(.2,1.6,.4,1) both}
+    @keyframes award-pop{from{transform:scale(0) rotate(-20deg)}to{transform:none}}
+    .award-title{margin-top:10px;font-size:13px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#ffe397}
+    .award-overlay.is-army .award-title{color:#ffb3d6}
+    .award-who{margin-top:6px;font-size:clamp(28px,calc(var(--uvw) * 8),40px);font-weight:900;letter-spacing:-.02em;color:var(--player-color,#fff);overflow-wrap:anywhere}
+    .award-from{margin-top:4px;font-size:14px;font-weight:700;color:#d9d2b8}
+    .award-from:empty{display:none}
     .winner-overlay{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#3b3418f7,#0b0a05fc)}
     .winner-overlay.is-open{display:flex}
     .winner-overlay.is-midgame #winnerNewGame{display:none}
@@ -501,6 +522,7 @@
           <div class="timer-unlimited" id="timerUnlimited">Fără limită de timp</div>
         </div>
         <div class="timer-warning" id="timerWarning" aria-hidden="true"></div>
+        <div class="pause-badge" id="pauseBadge" aria-hidden="true">⏸ Pauză · atinge ca să continui</div>
       </div>
       <div class="hint" id="nextText" aria-live="polite">Urmează Adi</div>
       <button type="button" class="dice-strip" id="diceStrip" aria-label="Dă din nou cu zarul"></button>
@@ -571,6 +593,14 @@
     </div>
   </div>
   <div class="score-toast" id="scoreToast" role="status"></div>
+  <div class="award-overlay" id="awardOverlay" role="status" aria-live="assertive">
+    <div class="award-card" id="awardCard">
+      <div class="award-icon" id="awardIcon"></div>
+      <div class="award-title" id="awardTitle"></div>
+      <div class="award-who" id="awardWho"></div>
+      <div class="award-from" id="awardFrom"></div>
+    </div>
+  </div>
   <div class="dice-overlay" id="diceOverlay" aria-hidden="true">
     <div class="dice-who" id="diceWho"></div>
     <div class="dice-stage" id="diceStage"></div>
@@ -731,6 +761,13 @@
       const fullscreenFeedbackElement = document.getElementById('fullscreenFeedback');
       let completedTurns = 0;
       let currentTurnTimerStartedAtMilliseconds = 0;
+      // Pauză: cât timp e activă, „ceasul” jocului stă pe loc (timp rămas, tura, durata jocului).
+      const pauseStorageKey = 'ture-paused-at-v1';
+      let pausedAtMilliseconds = (() => {
+        try { const v = Number(localStorage.getItem(pauseStorageKey)); if (v > 0 && v <= Date.now() + 60000) return v; } catch (_) {}
+        return null;
+      })();
+      const timerNow = () => pausedAtMilliseconds ?? Date.now();
       let currentTurnTimerDeadlineMilliseconds = 0;
       let previousRemainingMilliseconds = null;
       let mostRecentlyRenderedSeconds = null;
@@ -779,7 +816,7 @@
         if (!expirationSoundEnabled || document.visibilityState !== 'visible') return;
         // Evită redarea cu întârziere dacă aplicația a fost suspendată ori era în fundal.
         const warningStartsAtMilliseconds = currentTurnTimerDeadlineMilliseconds - warningThresholdMilliseconds;
-        const millisecondsSinceWarningStarted = Date.now() - warningStartsAtMilliseconds;
+        const millisecondsSinceWarningStarted = timerNow() - warningStartsAtMilliseconds;
         if (millisecondsSinceWarningStarted < 0 || millisecondsSinceWarningStarted > 1250) return;
         const audioContext = expirationSoundAudioContext;
         if (!audioContext || audioContext.state !== 'running') return;
@@ -818,7 +855,7 @@
       function playLoudThreeSecondAlarmOnceWhenTurnTimerExpires() {
         if (!expirationSoundEnabled || document.visibilityState !== 'visible') return;
         // Nu porni o alarmă întârziată după revenirea la o filă suspendată.
-        if (Date.now() - currentTurnTimerDeadlineMilliseconds > 1250) return;
+        if (timerNow() - currentTurnTimerDeadlineMilliseconds > 1250) return;
         const audioContext = expirationSoundAudioContext;
         if (!audioContext || audioContext.state !== 'running') return;
         stopPlayingExpirationSoundImmediately();
@@ -1131,6 +1168,7 @@
         } catch (_) { /* Aplicația funcționează și fără acces la stocare. */ }
       }
       function startNewTimerOnlyAfterEndingTurn() {
+        if (pausedAtMilliseconds !== null) resumeFromPause(true);
         stopPlayingExpirationSoundImmediately();
         currentTurnTimerStartedAtMilliseconds = Date.now();
         updateCurrentTurnTimerDeadlineUsingPreference();
@@ -1142,6 +1180,38 @@
         saveCurrentTurnTimerStart();
         renderCircularTimerAtCurrentTime();
       }
+      function applyPauseAppearance() {
+        const paused = pausedAtMilliseconds !== null;
+        timerFrameElement.classList.toggle('is-paused', paused);
+        document.getElementById('endTurn').classList.toggle('is-paused', paused);
+        timerFrameElement.setAttribute('aria-pressed', String(paused));
+      }
+      function pauseGame() {
+        if (pausedAtMilliseconds !== null) return;
+        pausedAtMilliseconds = Date.now();
+        try { localStorage.setItem(pauseStorageKey, String(pausedAtMilliseconds)); } catch (_) {}
+        stopPlayingExpirationSoundImmediately();
+        applyPauseAppearance();
+        renderCircularTimerAtCurrentTime();
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(30);
+      }
+      function resumeFromPause(silent) {
+        if (pausedAtMilliseconds === null) return;
+        const pausedFor = Date.now() - pausedAtMilliseconds;
+        pausedAtMilliseconds = null;
+        try { localStorage.removeItem(pauseStorageKey); } catch (_) {}
+        currentTurnTimerStartedAtMilliseconds += pausedFor;
+        updateCurrentTurnTimerDeadlineUsingPreference();
+        saveCurrentTurnTimerStart();
+        shiftGameClockBy(pausedFor);
+        applyPauseAppearance();
+        renderCircularTimerAtCurrentTime();
+        if (!silent && typeof navigator.vibrate === 'function') navigator.vibrate([20, 40, 20]);
+      }
+      timerFrameElement.addEventListener('click', () => {
+        activateExpirationSoundAfterUserInteraction();
+        if (pausedAtMilliseconds === null) pauseGame(); else resumeFromPause(false);
+      });
       function renderCircularTimerAtCurrentTime() {
         const timerIsDisabled = configuredTimerDurationSeconds === null;
         timerFrameElement.classList.toggle('is-untimed', timerIsDisabled);
@@ -1153,7 +1223,7 @@
           previousRemainingMilliseconds = null;
           return;
         }
-        const millisecondsRemaining = Math.max(0, currentTurnTimerDeadlineMilliseconds - Date.now());
+        const millisecondsRemaining = Math.max(0, currentTurnTimerDeadlineMilliseconds - timerNow());
         const roundedSecondsRemaining = Math.ceil(millisecondsRemaining / 1000);
         const timerDurationMilliseconds = configuredTimerDurationSeconds * 1000;
         const remainingProportion = Math.min(1, millisecondsRemaining / timerDurationMilliseconds);
@@ -1195,8 +1265,12 @@
         return Date.now();
       })();
       try { localStorage.setItem(gameStartStorageKey, String(gameStartedAtMilliseconds)); } catch (_) {}
+      function shiftGameClockBy(milliseconds) {
+        gameStartedAtMilliseconds += milliseconds;
+        try { localStorage.setItem(gameStartStorageKey, String(gameStartedAtMilliseconds)); } catch (_) {}
+      }
       function restartGameClock() {
-        gameStartedAtMilliseconds = Date.now();
+        gameStartedAtMilliseconds = timerNow();
         try { localStorage.setItem(gameStartStorageKey, String(gameStartedAtMilliseconds)); } catch (_) {}
         lastRenderedElapsedSecond = -1;
       }
@@ -1207,7 +1281,7 @@
       }
       let lastRenderedElapsedSecond = -1;
       function renderElapsedCounters(force) {
-        const now = Date.now();
+        const now = timerNow();
         const second = Math.floor(now / 1000);
         if (!force && second === lastRenderedElapsedSecond) return;
         lastRenderedElapsedSecond = second;
@@ -1559,12 +1633,7 @@
         const dice = buildDiceStage(count);
         // Rezultatul și (dacă e 7 la Catan) cardul hoțului se pun de acum, invizibile, ca să nu se miște nimic la final.
         const total = values.reduce((a, b) => a + b, 0);
-        diceResultElement.append(count > 1 ? `Total: ${total}` : `${total}`);
-        if (count > 1) {
-          const detail = document.createElement('small');
-          detail.textContent = values.join(' + ');
-          diceResultElement.append(detail);
-        }
+        diceResultElement.append(String(total));
         const robberRoll = rollIsCatanRobber(values);
         if (robberRoll) prepareCatanRobberInstructions(playerNames[currentPlayerIndex]);
         diceOverlayElement.classList.add('is-open');
@@ -2010,7 +2079,7 @@
           bumpedPlayerIndex = index;
           changeCatanScore(() => { catanScore[key] = previousHolder === index ? -1 : index; });
           if (previousHolder === index) showScoreToast(`${awardName}: scos de la ${playerNames[index]}`);
-          else showScoreToast(`${awardName} → ${playerNames[index]}${previousHolder >= 0 ? ` (de la ${playerNames[previousHolder]})` : ''} · ⭐ ${catanTotal(index)}`);
+          // (anunțul mare apare din changeCatanScore, deci fără notificare dublă aici)
           if (typeof navigator.vibrate === 'function') navigator.vibrate(25);
           return;
         }
@@ -2035,7 +2104,10 @@
       function changeCatanScore(mutate) {
         scoreUndoStack.push(JSON.parse(JSON.stringify(catanScore)));
         if (scoreUndoStack.length > 30) scoreUndoStack.shift();
+        const roadBefore = catanScore.road, armyBefore = catanScore.army;
         mutate();
+        if (catanScore.road !== roadBefore) announceAwardChange('road', catanScore.road, roadBefore);
+        if (catanScore.army !== armyBefore) announceAwardChange('army', catanScore.army, armyBefore);
         saveCatanScore();
         renderScoreRows();
         displayCurrentPlayerAndRound();
@@ -2218,6 +2290,49 @@
           podium.append(card);
         });
       }
+      let awardHideTimeoutId = 0;
+      function playAwardJingle(isArmy) {
+        if (!expirationSoundEnabled) return;
+        const audioContext = expirationSoundAudioContext;
+        if (!audioContext || audioContext.state !== 'running') return;
+        const start = audioContext.currentTime + 0.02;
+        const notes = isArmy ? [[392, 0, .12], [392, .14, .12], [523.25, .28, .14], [659.25, .44, .4]] : [[523.25, 0, .12], [659.25, .13, .12], [783.99, .26, .12], [1046.5, .4, .45]];
+        notes.forEach(([frequency, delay, duration]) => {
+          const oscillator = audioContext.createOscillator(); const gain = audioContext.createGain();
+          oscillator.type = isArmy ? 'square' : 'triangle';
+          oscillator.frequency.value = frequency;
+          const level = isArmy ? 0.08 : 0.22;
+          gain.gain.setValueAtTime(0.0001, start + delay);
+          gain.gain.linearRampToValueAtTime(level, start + delay + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + delay + duration);
+          oscillator.connect(gain); gain.connect(audioContext.destination);
+          oscillator.start(start + delay); oscillator.stop(start + delay + duration + 0.02);
+          oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+        });
+      }
+      // Anunț când cineva primește sau preia cel mai lung drum / cea mai mare armată.
+      function announceAwardChange(key, newHolder, previousHolder) {
+        if (newHolder < 0 || newHolder === previousHolder) return;
+        const isArmy = key === 'army';
+        const overlay = document.getElementById('awardOverlay');
+        document.getElementById('awardIcon').textContent = isArmy ? '⚔️' : '🛤️';
+        document.getElementById('awardTitle').textContent = isArmy ? 'Cea mai mare armată' : 'Cel mai lung drum';
+        const who = document.getElementById('awardWho');
+        who.textContent = playerNames[newHolder];
+        who.style.setProperty('--player-color', playerColorPalette[newHolder]);
+        document.getElementById('awardFrom').textContent = previousHolder >= 0
+          ? `i-a luat-o lui ${playerNames[previousHolder]} · +2 puncte` : '+2 puncte';
+        overlay.classList.toggle('is-army', isArmy);
+        overlay.classList.remove('is-open'); void overlay.offsetWidth; overlay.classList.add('is-open');
+        playAwardJingle(isArmy);
+        if (typeof navigator.vibrate === 'function') navigator.vibrate([60, 50, 120]);
+        window.clearTimeout(awardHideTimeoutId);
+        awardHideTimeoutId = window.setTimeout(() => overlay.classList.remove('is-open'), 2800);
+      }
+      document.getElementById('awardOverlay').addEventListener('click', () => {
+        window.clearTimeout(awardHideTimeoutId);
+        document.getElementById('awardOverlay').classList.remove('is-open');
+      });
       function showShortCampaignWin(index) {
         if (scoreDialog.open) scoreDialog.close();
         const nameElement = document.getElementById('winnerName');
@@ -2496,6 +2611,7 @@
       displayCurrentPlayerAndRound();
       updateSoundToggleAppearance();
       renderDiceStrip();
+      applyPauseAppearance();
       keepScreenAwake();
       keepCircularTimerSmoothlyUpdated();
     })();
