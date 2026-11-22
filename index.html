@@ -301,6 +301,13 @@
     .award-who{margin-top:6px;font-size:clamp(28px,calc(var(--uvw) * 8),40px);font-weight:900;letter-spacing:-.02em;color:var(--player-color,#fff);overflow-wrap:anywhere}
     .award-from{margin-top:4px;font-size:14px;font-weight:700;color:#d9d2b8}
     .award-from:empty{display:none}
+    .jump-dialog{width:min(calc(100% - 32px),360px);text-align:center;padding:22px 20px 16px}
+    .jump-avatar{width:56px;height:56px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:900;color:#101423;background:var(--player-color)}
+    .jump-dialog h2{margin:0;font-size:22px}
+    .jump-text{margin:6px 0 16px;font-size:14px;color:#b9c1d9;line-height:1.4}
+    .jump-confirm{display:block;width:100%;border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:900;color:#11152c;background:var(--player-color,#ad9bff)}
+    .jump-hint{margin:10px 0 0;font-size:12px;color:#8e98b5}
+    .player{cursor:pointer}
     .winner-overlay{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#3b3418f7,#0b0a05fc)}
     .winner-overlay.is-open{display:flex}
     .winner-overlay.is-midgame #winnerNewGame{display:none}
@@ -618,6 +625,13 @@
     <div class="dice-result" id="diceResult" role="status" aria-live="polite"></div>
     <div class="robber-panel" id="robberPanel" role="alert"></div>
   </div>
+  <dialog id="jumpDialog" class="jump-dialog" aria-labelledby="jumpTitle">
+    <div class="jump-avatar" id="jumpAvatar"></div>
+    <h2 id="jumpTitle"></h2>
+    <p class="jump-text" id="jumpText"></p>
+    <button type="button" class="jump-confirm" id="jumpConfirm"></button>
+    <p class="jump-hint">Atinge în afară ca să anulezi</p>
+  </dialog>
   <dialog id="resetDialog" aria-labelledby="resetTitle">
     <h2 id="resetTitle">Joc nou / resetare</h2>
     <p id="resetDescription">Se revine la Miha, runda 1. Cronometrul nu se resetează.</p>
@@ -1331,6 +1345,9 @@
         playerNames.forEach((playerName, index) => {
           const playerElement = document.createElement('div');
           playerElement.className = 'player';
+          playerElement.dataset.index = String(index);
+          playerElement.setAttribute('role', 'button');
+          playerElement.tabIndex = 0;
           playerElement.classList.toggle('active', index === currentPlayerIndex);
           playerElement.style.setProperty('--player-color', playerColorPalette[index]);
           if (index === currentPlayerIndex) playerElement.setAttribute('aria-current', 'true');
@@ -2000,7 +2017,7 @@
         const badges = (catanScore.longWinner === index ? '👑' : '') + (catanScore.shortWinner === index ? '🏆' : '') + (catanScore.road === index ? '🛤️' : '') + (catanScore.army === index ? '⚔️' : '');
         if (badges) vp.textContent += ` ${badges}`;
         playerElement.setAttribute('role', 'button');
-        playerElement.setAttribute('aria-label', `${playerNames[index]}: ${catanTotal(index)} puncte. Atinge pentru scor.`);
+        playerElement.setAttribute('aria-label', `${playerNames[index]}: ${catanTotal(index)} puncte. Atinge ca să treacă tura la el.`);
       }
       function renderScoreRows() {
         document.getElementById('targetValue').textContent = winningPoints();
@@ -2410,7 +2427,44 @@
       document.getElementById('targetMinus').addEventListener('click', () => changeWinningPoints(-1));
       document.getElementById('targetPlus').addEventListener('click', () => changeWinningPoints(1));
       openScoreButton.addEventListener('click', openScoreDialog);
-      playersContainerElement.addEventListener('click', () => { if (gameSettings.catan) openScoreDialog(); });
+      // Atingere pe un jucător: confirmare „Treci tura la X?” (ordinea din cerc rămâne aceeași).
+      const jumpDialog = document.getElementById('jumpDialog');
+      let jumpTargetIndex = -1;
+      function askToJumpTurnTo(index) {
+        const currentIndex = completedTurns % playerNames.length;
+        jumpTargetIndex = index;
+        jumpDialog.style.setProperty('--player-color', playerColorPalette[index]);
+        document.getElementById('jumpAvatar').textContent = playerNames[index].charAt(0).toLocaleUpperCase('ro-RO');
+        if (index === currentIndex) {
+          document.getElementById('jumpTitle').textContent = `E deja rândul lui ${playerNames[index]}`;
+          document.getElementById('jumpText').textContent = 'Poți reporni tura lui de la zero.';
+          document.getElementById('jumpConfirm').textContent = 'Repornește tura';
+        } else {
+          document.getElementById('jumpTitle').textContent = `Treci tura la ${playerNames[index]}?`;
+          document.getElementById('jumpText').textContent = `Tura lui ${playerNames[currentIndex]} se oprește, iar ${playerNames[index]} începe acum (cronometrul turei pornește de la zero). Ordinea jucătorilor rămâne aceeași.`;
+          document.getElementById('jumpConfirm').textContent = `Da, e rândul lui ${playerNames[index]}`;
+        }
+        if (!jumpDialog.open) jumpDialog.showModal();
+      }
+      document.getElementById('jumpConfirm').addEventListener('click', () => {
+        if (jumpTargetIndex < 0) return;
+        const currentIndex = completedTurns % playerNames.length;
+        // Rămâne în aceeași rundă: se schimbă doar cine e la rând.
+        updateCompletedTurnsAndRefresh(Math.max(0, completedTurns - currentIndex + jumpTargetIndex));
+        startNewTimerOnlyAfterEndingTurn();
+        renderElapsedCounters(true);
+        jumpDialog.close();
+        showScoreToast(`▶ E rândul lui ${playerNames[jumpTargetIndex]}`);
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(25);
+      });
+      playersContainerElement.addEventListener('click', event => {
+        const card = event.target.closest('.player');
+        if (card) askToJumpTurnTo(Number(card.dataset.index));
+      });
+      playersContainerElement.addEventListener('keydown', event => {
+        const card = event.target.closest('.player');
+        if (card && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); askToJumpTurnTo(Number(card.dataset.index)); }
+      });
       document.getElementById('winnerNewGame').addEventListener('click', () => {
         winnerOverlayElement.classList.remove('is-open');
         document.getElementById('resetExtras').checked = true;
@@ -2440,7 +2494,7 @@
         document.getElementById('diceVolumeLabel').textContent = `${event.target.value}%`;
       });
       // Atingere în afara unei ferestre (pe fundalul întunecat) = închide, fără să salveze nimic.
-      [settingsDialog, resetDialog, statsDialog, scoreDialog].forEach(dialog => {
+      [settingsDialog, resetDialog, statsDialog, scoreDialog, jumpDialog].forEach(dialog => {
         let pressStartedOutside = false;
         const isOutside = event => {
           if (event.target !== dialog) return false;
