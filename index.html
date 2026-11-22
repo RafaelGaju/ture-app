@@ -2174,17 +2174,7 @@
         document.getElementById('winnerTrophy').textContent = longCampaign ? '👑' : '🏆';
         const stats = document.getElementById('winnerStats');
         stats.replaceChildren();
-        if (longCampaign) {
-          const sevens = diceHistory.filter(e => e.v.length === 2 && e.v[0] + e.v[1] === 7).length;
-          const rollsByWinner = diceHistory.filter(e => e.p === winnerIndex).length;
-          const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-          [`🎲 ${plural(diceHistory.length, 'aruncare', 'aruncări')}`, `🥷 ${plural(sevens, 'hoț', 'hoți')}`, `🔁 ${plural(round, 'rundă', 'runde')}`,
-           catanScore.road === winnerIndex ? '🛤️ Cel mai lung drum' : null,
-           catanScore.army === winnerIndex ? '⚔️ Cea mai mare armată' : null,
-           rollsByWinner ? null : null].filter(Boolean).forEach(text => {
-            const chip = document.createElement('span'); chip.textContent = text; stats.append(chip);
-          });
-        }
+        // Pe ecranul final rămân doar locurile 1, 2 și 3 (fără alte statistici).
         renderWinnerPodium(winnerIndex);
         winnerOverlayElement.classList.toggle('is-epic', longCampaign);
         winnerOverlayElement.classList.remove('is-midgame');
