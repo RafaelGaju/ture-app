@@ -344,6 +344,33 @@
     .round small{font-size:10.5px;font-weight:700;color:#8e98b5;font-variant-numeric:tabular-nums;letter-spacing:.02em}
     .end{position:relative}
     .end .turn-elapsed{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:13px;font-weight:500;letter-spacing:.06em;color:#11152c;opacity:.38;font-variant-numeric:tabular-nums;pointer-events:none}
+    /* ===== Setări: secțiuni, spațiere uniformă (scara 4/8/12/16/20) ===== */
+    .settings-dialog{padding:20px 20px 16px}
+    .settings-dialog h2{margin:0 0 4px;font-size:22px}
+    .set-section{padding:16px 0 18px;border-top:1px solid #3a4160}
+    .set-section:first-of-type{border-top:0;padding-top:14px}
+    .set-heading{margin:0 0 12px;font-size:12px;line-height:1;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#b3a8ff}
+    .set-section .settings-field-label{margin:16px 0 8px}
+    .set-section .set-heading + .settings-field-label{margin-top:0}
+    .set-section .settings-no-timer{margin:4px 0 0}
+    .set-section .set-heading + .settings-no-timer{margin-top:-6px}
+    .set-section .settings-note{margin:6px 0 0}
+    .set-section .settings-note b{color:#dfe4f8}
+    .set-section .settings-name-list{margin-top:12px}
+    .set-section .starter-row{margin-top:12px;gap:12px}
+    .set-section .starter-row .settings-field-label{margin:0;flex:0 0 auto}
+    .settings-volume-label{display:flex;justify-content:space-between}
+    .settings-volume-label span{color:#aab3cf;font-variant-numeric:tabular-nums}
+    .settings-range{display:block;margin:0}
+    .settings-error:empty{display:none}
+    .settings-error{margin:0 0 12px}
+    .settings-actions{margin-top:4px;padding-top:16px;border-top:1px solid #3a4160}
+    /* Săgeata dropdown-urilor: desenată de noi, la distanță de margine */
+    select.settings-select{-webkit-appearance:none;appearance:none;padding-right:46px;cursor:pointer;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 1.5 7 7l5.5-5.5' fill='none' stroke='%23c6cce4' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 18px center;background-size:14px 9px}
+    select.settings-select:disabled{opacity:.45;cursor:default}
+    .reset-starter select.settings-select{padding-top:10px;padding-bottom:10px}
     .settings-dice-row{display:flex;align-items:center;gap:12px}
     .settings-dice-row .settings-select{flex:1}
     .settings-range{width:100%;accent-color:#aa9bff;height:32px}
@@ -561,69 +588,81 @@
   <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
     <form id="playerSettingsForm" autocomplete="off">
       <h2 id="settingsTitle">⚙️ Setări</h2>
-      <p class="settings-description">Alege câți jucați (maximum 6). Ține apăsat ⠿ și trage ca să schimbi ordinea; jocul merge în cerc, în ordinea listei.</p>
-      <label class="settings-field-label" for="playerCount">Număr de jucători</label>
-      <select class="settings-select" id="playerCount" name="playerCount">
-        <option value="1">1 jucător</option><option value="2">2 jucători</option>
-        <option value="3">3 jucători</option><option value="4">4 jucători</option>
-        <option value="5">5 jucători</option><option value="6">6 jucători</option>
-      </select>
-      <div class="settings-name-list" id="playerNameFields"></div>
-      <div class="starter-row">
-        <label class="settings-field-label" for="starterSelect" style="margin:0">🎬 Începe</label>
-        <select class="settings-select" id="starterSelect"></select>
-      </div>
-      <div class="settings-divider"></div>
-      <label class="settings-field-label" for="timerDurationSeconds">Durata unei ture</label>
-      <div class="settings-timer-row">
-        <input class="settings-select" id="timerDurationSeconds" name="timerDurationSeconds" type="number" inputmode="numeric" min="1" max="3600" step="1" value="45" required />
-        <span class="settings-timer-unit">secunde</span>
-      </div>
-      <label class="settings-no-timer" for="timerDisabled">
-        <input id="timerDisabled" name="timerDisabled" type="checkbox" />
-        Fără cronometru
-      </label>
-      <p class="settings-note">Implicit: 45 secunde. Poți alege între 1 secundă și 60 de minute. Alarma se activează doar când expiră un cronometru.</p>
-      <div class="settings-divider"></div>
-      <label class="settings-no-timer" for="diceEnabled">
-        <input id="diceEnabled" name="diceEnabled" type="checkbox" />
-        🎲 Folosește zaruri
-      </label>
-      <label class="settings-field-label" for="diceCount">Număr de zaruri</label>
-      <select class="settings-select" id="diceCount" name="diceCount">
-        <option value="1">1 zar</option><option value="2">2 zaruri</option>
-        <option value="3">3 zaruri</option><option value="4">4 zaruri</option>
-        <option value="5">5 zaruri</option><option value="6">6 zaruri</option>
-      </select>
-      <label class="settings-field-label" for="diceSound">Sunet zaruri</label>
-      <div class="settings-dice-row">
-        <select class="settings-select" id="diceSound" name="diceSound">
-          <option value="soft">Discret — atingeri moi, fără zornăit</option>
-          <option value="chime">Ton blând — notă muzicală, fără zgomot</option>
-          <option value="felt">Realist — pe pâslă</option>
-          <option value="wood">Realist — pe masă de lemn</option>
-          <option value="off">Fără sunet de zar</option>
+
+      <section class="set-section">
+        <h3 class="set-heading">👥 Jucători</h3>
+        <label class="settings-field-label" for="playerCount">Număr de jucători</label>
+        <select class="settings-select" id="playerCount" name="playerCount">
+          <option value="1">1 jucător</option><option value="2">2 jucători</option>
+          <option value="3">3 jucători</option><option value="4">4 jucători</option>
+          <option value="5">5 jucători</option><option value="6">6 jucători</option>
         </select>
-        <button type="button" class="cancel sound-preview" id="diceSoundPreview">▶ Ascultă</button>
-      </div>
-      <label class="settings-field-label" for="diceVolume">Volum zaruri <span id="diceVolumeLabel"></span></label>
-      <input type="range" id="diceVolume" class="settings-range" min="5" max="100" step="5" value="50" />
-      <p class="settings-note">Cu zarurile pornite, butonul mare devine „[Următorul], dă cu zarul”: încheie tura și aruncă automat zarurile pentru jucătorul următor. Atinge rezultatul de sub cronometru ca să arunci din nou.</p>
-      <div class="settings-divider"></div>
-      <span class="settings-field-label">🎲 Jocuri de societate</span>
-      <label class="settings-no-timer" for="gameCatan">
-        <input id="gameCatan" name="gameCatan" type="checkbox" />
-        Catan
-      </label>
-      <label class="settings-field-label" for="catanTarget">Catan: câștigă cine ajunge la</label>
-      <div class="settings-timer-row">
-        <select class="settings-select" id="catanTarget" name="catanTarget"></select>
-        <span class="settings-timer-unit">puncte</span>
-      </div>
-      <p class="settings-note">Catan pornește automat 2 zaruri. Când pică 7 apare anunțul „Runda hoțului”, cu pașii de urmat.</p>
+        <p class="settings-note">Ține apăsat <b>⠿</b> și trage ca să schimbi ordinea. Jocul merge în cerc, în ordinea listei.</p>
+        <div class="settings-name-list" id="playerNameFields"></div>
+        <div class="starter-row">
+          <label class="settings-field-label" for="starterSelect">🎬 Începe</label>
+          <select class="settings-select" id="starterSelect"></select>
+        </div>
+      </section>
+
+      <section class="set-section">
+        <h3 class="set-heading">⏱ Cronometru</h3>
+        <label class="settings-field-label" for="timerDurationSeconds">Durata unei ture</label>
+        <div class="settings-timer-row">
+          <input class="settings-select" id="timerDurationSeconds" name="timerDurationSeconds" type="number" inputmode="numeric" min="1" max="3600" step="1" value="45" required />
+          <span class="settings-timer-unit">secunde</span>
+        </div>
+        <label class="settings-no-timer" for="timerDisabled">
+          <input id="timerDisabled" name="timerDisabled" type="checkbox" />
+          Fără cronometru
+        </label>
+        <p class="settings-note">Implicit 45 s (între 1 s și 60 min). Alarma sună doar când expiră timpul. Schimbarea se aplică imediat, fără să repornească tura curentă.</p>
+      </section>
+
+      <section class="set-section">
+        <h3 class="set-heading">🎲 Zaruri</h3>
+        <label class="settings-no-timer" for="diceEnabled">
+          <input id="diceEnabled" name="diceEnabled" type="checkbox" />
+          Folosește zaruri
+        </label>
+        <p class="settings-note">Butonul mare devine „[Următorul], dă cu zarul”: încheie tura și aruncă automat. Atinge rezultatul de sub cronometru ca să arunci din nou.</p>
+        <label class="settings-field-label" for="diceCount">Număr de zaruri</label>
+        <select class="settings-select" id="diceCount" name="diceCount">
+          <option value="1">1 zar</option><option value="2">2 zaruri</option>
+          <option value="3">3 zaruri</option><option value="4">4 zaruri</option>
+          <option value="5">5 zaruri</option><option value="6">6 zaruri</option>
+        </select>
+        <label class="settings-field-label" for="diceSound">Sunet</label>
+        <div class="settings-dice-row">
+          <select class="settings-select" id="diceSound" name="diceSound">
+            <option value="soft">Discret</option>
+            <option value="chime">Ton blând</option>
+            <option value="felt">Realist · pâslă</option>
+            <option value="wood">Realist · lemn</option>
+            <option value="off">Fără sunet</option>
+          </select>
+          <button type="button" class="cancel sound-preview" id="diceSoundPreview">▶ Ascultă</button>
+        </div>
+        <label class="settings-field-label settings-volume-label" for="diceVolume">Volum <span id="diceVolumeLabel"></span></label>
+        <input type="range" id="diceVolume" class="settings-range" min="5" max="100" step="5" value="50" />
+      </section>
+
+      <section class="set-section">
+        <h3 class="set-heading">🧩 Jocuri de societate</h3>
+        <label class="settings-no-timer" for="gameCatan">
+          <input id="gameCatan" name="gameCatan" type="checkbox" />
+          Catan
+        </label>
+        <p class="settings-note">Pornește automat 2 zaruri. La 7 apare „Runda hoțului”, cu pașii de urmat.</p>
+        <label class="settings-field-label" for="catanTarget">Câștigă cine ajunge la</label>
+        <div class="settings-timer-row">
+          <select class="settings-select" id="catanTarget" name="catanTarget"></select>
+          <span class="settings-timer-unit">puncte</span>
+        </div>
+      </section>
+
       <p class="settings-error" id="settingsError" role="alert"></p>
-      <p class="settings-note">Setările cronometrului se aplică imediat, dar timpul scurs din tura curentă nu se reia de la zero. Doar „Încheie tura” pornește o tură nouă.</p>
-      <div class="dialog-actions">
+      <div class="dialog-actions settings-actions">
         <button class="cancel" id="cancelSettings" type="button">Anulează</button>
         <button class="confirm" type="submit">Salvează</button>
       </div>
