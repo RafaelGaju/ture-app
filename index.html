@@ -241,6 +241,7 @@
     #scoreDialog{padding:16px 14px 14px;background:#1c2134}
     .sc-head{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:10px;margin:2px 4px 12px}
     .sc-head h2{margin:0;font-size:22px}
+    .sc-autosave{order:3;flex-basis:100%;font-size:11.5px;font-weight:700;color:#8e98b5;margin-top:2px}
     .sc-goal{font-size:13px;color:#aab3cf;font-weight:700}
     .sc-goal b{color:#ffe397;font-size:17px;min-width:22px;text-align:center;font-variant-numeric:tabular-nums}
     .sc-goal-stepper{display:inline-flex;align-items:center;gap:4px;margin:0 4px;padding:2px;border-radius:10px;background:#141a2c;vertical-align:middle}
@@ -545,6 +546,7 @@
   <dialog id="scoreDialog" class="stats-dialog" aria-labelledby="scoreTitle">
     <div class="sc-head">
       <h2 id="scoreTitle">⭐ Scor</h2>
+      <span class="sc-autosave">✓ se salvează pe loc · atinge în afară ca să închizi</span>
       <span class="sc-goal">primul la
         <span class="sc-goal-stepper">
           <button type="button" id="targetMinus" aria-label="Scade punctele pentru câștig">−</button>
@@ -555,7 +557,6 @@
     </div>
     <div id="scoreRows" class="sc-list"></div>
     <p class="sc-help">Așezare = 1 · Oraș = 2 · Carte de punct = 1 · 🛤️ și ⚔️ = +2 fiecare · ținta se schimbă cu − / + de sus</p>
-    <button class="sc-done" id="closeScore" type="button">Gata</button>
   </dialog>
   <div class="winner-overlay" id="winnerOverlay" role="alertdialog" aria-labelledby="winnerName">
     <div class="winner-kind" id="winnerKind"></div>
@@ -566,7 +567,7 @@
     <div class="winner-stats" id="winnerStats"></div>
     <div class="winner-actions">
       <button type="button" class="confirm" id="winnerNewGame">Joc nou</button>
-      <button type="button" class="cancel" id="winnerClose">Continuăm (greșeală)</button>
+      <button type="button" class="cancel" id="winnerClose">Continuăm</button>
     </div>
   </div>
   <div class="score-toast" id="scoreToast" role="status"></div>
@@ -2178,7 +2179,7 @@
         renderWinnerPodium(winnerIndex);
         winnerOverlayElement.classList.toggle('is-epic', longCampaign);
         winnerOverlayElement.classList.remove('is-midgame');
-        document.getElementById('winnerClose').textContent = 'Continuăm (greșeală)';
+        document.getElementById('winnerClose').textContent = 'Continuăm';
         winnerOverlayElement.classList.add('is-open');
         if (longCampaign) {
           launchConfetti(); window.setTimeout(launchConfetti, 1400); window.setTimeout(launchConfetti, 2800);
@@ -2267,7 +2268,6 @@
       document.getElementById('targetPlus').addEventListener('click', () => changeWinningPoints(1));
       openScoreButton.addEventListener('click', openScoreDialog);
       playersContainerElement.addEventListener('click', () => { if (gameSettings.catan) openScoreDialog(); });
-      document.getElementById('closeScore').addEventListener('click', () => scoreDialog.close());
       document.getElementById('winnerNewGame').addEventListener('click', () => {
         winnerOverlayElement.classList.remove('is-open');
         document.getElementById('resetExtras').checked = true;
