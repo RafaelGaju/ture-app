@@ -308,6 +308,9 @@
     .winner-overlay.is-midgame .winner-name{font-size:clamp(28px,calc(var(--uvw) * 8),44px)}
     .winner-kind{font-size:13px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#f1e6c0;opacity:.85}
     @media(max-width:430px){.winner-kind,.winner-overlay.is-epic .winner-kind{letter-spacing:.08em;font-size:13px}}
+    .winner-award{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+    .winner-award:empty{display:none}
+    .winner-award span{font-size:13px;font-weight:800;color:#ffe397;background:#00000059;border:1px solid #ffe39755;border-radius:999px;padding:5px 12px}
     .winner-podium{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:2px;width:100%;max-width:560px}
     .winner-podium:empty{display:none}
     .podium-place{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto;max-width:calc(50% - 4px);padding:8px 12px 8px 9px;border-radius:14px;background:#00000059;border:1px solid #ffffff1f;border-left:4px solid var(--player-color)}
@@ -592,6 +595,7 @@
     <div class="winner-trophy" id="winnerTrophy">🏆</div>
     <div class="winner-name" id="winnerName"></div>
     <div class="winner-sub" id="winnerSub"></div>
+    <div class="winner-award" id="winnerAward"></div>
     <div class="winner-podium" id="winnerPodium"></div>
     <div class="winner-stats" id="winnerStats"></div>
     <div class="winner-actions">
@@ -2113,12 +2117,27 @@
         if (scoreUndoStack.length > 30) scoreUndoStack.shift();
         const roadBefore = catanScore.road, armyBefore = catanScore.army;
         mutate();
-        if (catanScore.road !== roadBefore) announceAwardChange('road', catanScore.road, roadBefore);
-        if (catanScore.army !== armyBefore) announceAwardChange('army', catanScore.army, armyBefore);
+        const awardChanges = [];
+        if (catanScore.road !== roadBefore && catanScore.road >= 0) awardChanges.push(['road', catanScore.road, roadBefore]);
+        if (catanScore.army !== armyBefore && catanScore.army >= 0) awardChanges.push(['army', catanScore.army, armyBefore]);
         saveCatanScore();
         renderScoreRows();
         displayCurrentPlayerAndRound();
+        const winnerWasOpen = winnerOverlayElement.classList.contains('is-open');
         checkForCatanWinner();
+        const victoryJustShown = !winnerWasOpen && winnerOverlayElement.classList.contains('is-open');
+        if (victoryJustShown && awardChanges.length) {
+          // Victoria e evenimentul principal; bonusul care a adus-o apare mic, sub câștigător.
+          const note = document.getElementById('winnerAward');
+          note.replaceChildren();
+          awardChanges.forEach(([key, holder, previous]) => {
+            const chip = document.createElement('span');
+            chip.textContent = `${key === 'army' ? '⚔️ + Cea mai mare armată' : '🛤️ + Cel mai lung drum'}${previous >= 0 ? ` (de la ${playerNames[previous]})` : ''}`;
+            note.append(chip);
+          });
+        } else {
+          awardChanges.forEach(([key, holder, previous]) => announceAwardChange(key, holder, previous));
+        }
       }
       function openScoreDialog() { renderScoreRows(); if (!scoreDialog.open) scoreDialog.showModal(); }
       function launchConfetti() {
@@ -2256,6 +2275,7 @@
         stats.replaceChildren();
         // Pe ecranul final rămân doar locurile 1, 2 și 3 (fără alte statistici).
         renderWinnerPodium(winnerIndex);
+        document.getElementById('winnerAward').replaceChildren();
         winnerOverlayElement.classList.toggle('is-epic', longCampaign);
         winnerOverlayElement.classList.remove('is-midgame');
         document.getElementById('winnerClose').textContent = 'Continuăm';
@@ -2342,6 +2362,7 @@
       });
       function showShortCampaignWin(index) {
         if (scoreDialog.open) scoreDialog.close();
+        document.getElementById('winnerAward').replaceChildren();
         const nameElement = document.getElementById('winnerName');
         nameElement.textContent = `${playerNames[index]} a câștigat campania scurtă!`;
         nameElement.style.setProperty('--player-color', playerColorPalette[index]);
